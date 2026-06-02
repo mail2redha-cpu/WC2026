@@ -5,7 +5,7 @@
 
 export const config = { runtime: 'edge' };
 
-const MODEL = 'gemini-2.0-flash-exp'; // fast & cheap, good vision
+const MODEL = 'gemini-2.0-flash';
 const ALLOWED_STATUS = ['have', 'missing', 'double'];
 
 function albumPrompt(country) {
