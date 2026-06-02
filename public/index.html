@@ -125,10 +125,13 @@ main{padding:12px 14px;max-width:1200px;margin:0 auto}
 .uploadBtn:hover{background:rgba(245,158,11,.25)}
 .urow{display:flex;gap:6px;align-items:center;padding:5px 6px;border-radius:5px;margin-bottom:3px;background:var(--card)}
 .urow .badge{font-size:9px;font-weight:900;padding:1px 5px;border-radius:3px;letter-spacing:.04em}
-.urow .b-have{background:rgba(100,116,139,.2);color:#94a3b8}
+.urow .b-have{background:rgba(16,185,129,.2);color:var(--green)}
 .urow .b-double{background:rgba(59,130,246,.2);color:var(--blue)}
 .urow .b-missing{background:rgba(239,68,68,.2);color:var(--red)}
 .urow .b-unmatched{background:rgba(245,158,11,.2);color:var(--gold)}
+.urow .b-warn{background:rgba(245,158,11,.25);color:var(--gold)}
+.urow-warn{background:rgba(245,158,11,.06) !important;border:1px solid rgba(245,158,11,.18)}
+.warn-chip{font-size:9px;color:var(--gold);font-weight:700;background:rgba(245,158,11,.15);padding:1px 5px;border-radius:3px;letter-spacing:.03em;margin-left:4px}
 .urow input[type=checkbox]{accent-color:var(--gold)}
 </style>
 </head>
@@ -921,7 +924,7 @@ function renderExtractionResults(result){
       }
     }
   } else {
-    // doubles mode: match by (country, last name)
+    // doubles mode: star=have (missing→have), no star=double
     for (const row of result.stickers){
       const country = row.country;
       const last = (row.last || '').toUpperCase();
@@ -933,12 +936,21 @@ function renderExtractionResults(result){
           match = SEED.find(s => s.country === country && s.last === last);
         }
       }
+      // For no-star stickers (double): warn if already recorded as double in current list
+      let warn = null;
+      if (match && row.status === 'double') {
+        const cur = statusOf(me, match.id);
+        if (cur === 'double') warn = 'already in doubles — confirm';
+      }
       resolved.push({
         sid: match ? match.id : null,
         status: row.status,
-        label: match ? `${match.id} ${match.last}${match.first?' ('+match.first+')':''}` : `${country||'?'} ${last||'?'} — no match`,
+        label: match
+          ? `${match.id} ${match.last}${match.first?' ('+match.first+')':''} · ${match.country}`
+          : `${country||'?'} ${last||'?'} — no match`,
         matched: !!match,
-        checked: !!match,
+        checked: !!match && !warn,  // uncheck already-doubles — require explicit confirm
+        warn,
       });
     }
   }
@@ -947,11 +959,13 @@ function renderExtractionResults(result){
 
   let h = '';
   resolved.forEach((r, i) => {
-    const badgeCls = r.matched ? ('b-'+r.status) : 'b-unmatched';
-    h += `<div class="urow">
+    const badgeCls = r.warn ? 'b-warn' : (r.matched ? ('b-'+r.status) : 'b-unmatched');
+    const statusLabel = r.status === 'have' ? '⭐ HAVE' : r.status.toUpperCase();
+    const warnChip = r.warn ? `<span class="warn-chip">⚠ ${r.warn}</span>` : '';
+    h += `<div class="urow${r.warn?' urow-warn':''}">
       <input type="checkbox" id="urow_${i}" ${r.checked?'checked':''} ${r.matched?'':'disabled'} onchange="lastExtraction[${i}].checked=this.checked">
-      <span class="badge ${badgeCls}">${r.status.toUpperCase()}</span>
-      <span style="flex:1;color:${r.matched?'var(--txt)':'var(--muted)'}">${r.label}</span>
+      <span class="badge ${badgeCls}">${statusLabel}</span>
+      <span style="flex:1;color:${r.matched?'var(--txt)':'var(--muted)'}">${r.label}${warnChip}</span>
     </div>`;
   });
   list.innerHTML = h;

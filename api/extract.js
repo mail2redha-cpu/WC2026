@@ -31,15 +31,17 @@ If you cannot determine a slot with confidence, omit it rather than guessing.`;
 }
 
 function doublesPrompt() {
-  return `You are reading a photo of a Panini FIFA WC 2026 collector's DOUBLES PILE (loose stickers).
+  return `You are reading a photo of Panini FIFA WC 2026 stickers. The photo may show a pile, a spread, individual stickers, or any format — always stickers.
 
-For each visible sticker, identify:
-- The player's LAST NAME (printed at bottom in bold)
-- The COUNTRY (visible from flag/jersey/text on the sticker)
-- Whether it has a small pink/magenta STAR marker above the sticker:
-    - star present       -> "have"   (newly acquired, adding to collection)
-    - no star (clean)    -> "double" (duplicate)
-- The CLUB if you can read it (the small text under the player name)
+For each clearly visible sticker, identify:
+- The player's LAST NAME (printed at bottom in bold capitals)
+- The COUNTRY (from the flag, jersey, or text visible on the sticker)
+- Whether there is a small pink/magenta STAR marker positioned above or on top of the sticker:
+    - star present  → "have"   (newly acquired sticker; was missing, now owned)
+    - no star       → "double" (duplicate copy already owned)
+- The CLUB if readable (small text under the player name)
+
+The star is a physical pink/magenta sticker marker placed by the collector. Look carefully — it sits above the sticker card, not printed on it.
 
 Return ONLY valid JSON, no prose. Format:
 {"stickers":[{"last":"DJIKU","country":"Ghana","club":"Spartak Moskva","status":"double"},{"last":"MAIGNAN","country":"France","status":"have"}, ...]}
