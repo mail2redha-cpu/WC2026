@@ -37,8 +37,8 @@ For each visible sticker, identify:
 - The player's LAST NAME (printed at bottom in bold)
 - The COUNTRY (visible from flag/jersey/text on the sticker)
 - Whether it has a small pink/magenta STAR marker above the sticker:
-    - star present       -> "double"
-    - no star (clean)    -> "have"
+    - star present       -> "have"   (newly acquired, adding to collection)
+    - no star (clean)    -> "double" (duplicate)
 - The CLUB if you can read it (the small text under the player name)
 
 Return ONLY valid JSON, no prose. Format:
