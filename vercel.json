@@ -1,10 +1,13 @@
 {
   "version": 2,
-  "public": true,
+  "buildCommand": "echo 'No build needed'",
+  "public": "public",
   "builds": [
     { "src": "api/extract.js", "use": "@vercel/node" }
   ],
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "routes": [
+    { "src": "/api/.*", "dest": "/api/extract.js" },
+    { "src": "/.*\\.(js|css|svg|ico|json|txt|md)$", "dest": "/public/$1" },
+    { "src": "/(.*)", "dest": "/public/index.html" }
   ]
 }
