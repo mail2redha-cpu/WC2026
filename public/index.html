@@ -168,31 +168,33 @@ main{padding:12px 14px;max-width:1200px;margin:0 auto}
   ✎ Editing — tap any sticker to cycle <span style="color:var(--muted)">have</span> → <span style="color:var(--blue)">double</span> → <span style="color:var(--red)">missing</span>. Saves automatically.
   <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
     <button class="uploadBtn" onclick="openUpload('album')">📷 Scan album page</button>
-    <button class="uploadBtn" onclick="openUpload('doubles')">📷 Scan doubles pile</button>
+    <button class="uploadBtn" onclick="openUpload('batch')">📥 New batch</button>
+    <button class="uploadBtn" onclick="openUpload('override-doubles')">🔄 Update my doubles</button>
   </div>
 </div>
 
 <!-- Upload modal -->
 <div id="uploadModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:14px">
   <div style="background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:18px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto">
-    <h3 id="uploadTitle" style="font-size:14px;font-weight:900;margin-bottom:10px;color:var(--gold)">Upload</h3>
+    <h3 id="uploadTitle" style="font-size:14px;font-weight:900;margin-bottom:4px;color:var(--gold)">Upload</h3>
+    <p id="uploadDesc" style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5"></p>
 
     <div id="detectedCountry" style="display:none;margin-bottom:12px;padding:8px;background:var(--sur);border-radius:6px;border-left:3px solid var(--gold)">
       <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Detected Country:</div>
       <div id="detectedCountryName" style="font-size:14px;font-weight:900;color:var(--gold);margin-top:4px"></div>
     </div>
 
-    <input type="file" id="uploadFile" accept="image/*" style="display:none" onchange="onFilePicked(event)">
-    <button class="uploadBtn" style="width:100%;padding:12px" onclick="document.getElementById('uploadFile').click()">📎 Choose photo</button>
+    <input type="file" id="uploadFile" accept="image/*" multiple style="display:none" onchange="onFilesPicked(event)">
+    <button class="uploadBtn" style="width:100%;padding:12px" onclick="document.getElementById('uploadFile').click()">📎 Choose photos</button>
+    <div id="uploadThumbs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
 
     <div id="uploadStatus" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
-    <img id="uploadPreview" style="display:none;max-width:100%;margin-top:10px;border-radius:6px;max-height:160px;object-fit:contain;background:#000">
 
     <div id="uploadResults" style="margin-top:12px;display:none">
-      <div style="font-size:12px;color:#94a3b8;margin-bottom:6px">Detected (review then apply):</div>
-      <div id="uploadResultsList" style="max-height:280px;overflow-y:auto;background:var(--sur);border-radius:6px;padding:8px;font-size:12px"></div>
+      <div id="uploadResultsHeader" style="font-size:12px;color:#94a3b8;margin-bottom:6px">Review before applying:</div>
+      <div id="uploadResultsList" style="max-height:300px;overflow-y:auto;background:var(--sur);border-radius:6px;padding:8px;font-size:12px"></div>
       <div style="margin-top:10px;display:flex;gap:6px">
-        <button class="uploadBtn" style="flex:1" id="applyBtn" onclick="applyExtraction()">✓ Apply changes</button>
+        <button class="uploadBtn" style="flex:1" id="applyBtn" onclick="applyExtraction()">✓ Apply</button>
         <button class="uploadBtn" style="background:transparent;border:1px solid var(--bdr);color:var(--muted)" onclick="closeUpload()">Cancel</button>
       </div>
     </div>
@@ -782,41 +784,44 @@ async function resetAllStatus(){
 }
 
 // ── UPLOAD / AI EXTRACTION ────────────────────────────────────────────
-let uploadMode = null;       // 'album' or 'doubles'
-let lastExtraction = null;   // array of resolved {sticker_id, status} to apply
+let uploadMode = null;       // 'album' | 'batch' | 'override-doubles'
+let lastExtraction = null;   // resolved rows to apply
+let overrideOldDoubles = []; // stickers currently double but not in new scan (override mode)
 
 function openUpload(mode){
   uploadMode = mode;
-  document.getElementById('uploadTitle').textContent = mode === 'album' ? '📷 Scan album page' : '📷 Scan doubles pile';
+  const titles = { album:'📷 Scan album page', batch:'📥 Upload new batch', 'override-doubles':'🔄 Update my doubles' };
+  const descs  = {
+    album: 'Photo of an album page — detects which slots are filled or empty.',
+    batch: '⭐ Pink star = newly acquired (missing → have)  ·  No star = duplicate (double). Select one or more photos.',
+    'override-doubles': 'Select photos of ALL your current doubles. This will fully replace your doubles list.'
+  };
+  document.getElementById('uploadTitle').textContent = titles[mode];
+  document.getElementById('uploadDesc').textContent  = descs[mode];
   document.getElementById('detectedCountry').style.display = 'none';
   document.getElementById('uploadStatus').textContent = '';
   document.getElementById('uploadResults').style.display = 'none';
-  document.getElementById('uploadPreview').style.display = 'none';
+  document.getElementById('uploadThumbs').innerHTML = '';
   document.getElementById('uploadFile').value = '';
+  document.getElementById('uploadFile').multiple = (mode !== 'album');
   lastExtraction = null;
+  overrideOldDoubles = [];
   document.getElementById('uploadModal').style.display = 'flex';
 }
-function closeUpload(){
-  document.getElementById('uploadModal').style.display = 'none';
-}
+function closeUpload(){ document.getElementById('uploadModal').style.display = 'none'; }
 
 function fileToBase64(file){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      const base64 = dataUrl.split(',')[1];
-      resolve({ base64, mimeType: file.type || 'image/jpeg', dataUrl });
-    };
+    reader.onload = () => resolve({ base64: reader.result.split(',')[1], mimeType: file.type||'image/jpeg', dataUrl: reader.result });
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
 
-// Resize image client-side to keep payloads small (max 1600px wide, jpeg quality 0.85)
 async function resizeImage(file){
   const { dataUrl } = await fileToBase64(file);
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
       const maxW = 1600;
@@ -824,184 +829,225 @@ async function resizeImage(file){
       if (w > maxW){ h = Math.round(h * maxW / w); w = maxW; }
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       const jpeg = canvas.toDataURL('image/jpeg', 0.85);
-      const base64 = jpeg.split(',')[1];
-      resolve({ base64, mimeType: 'image/jpeg', dataUrl: jpeg });
+      resolve({ base64: jpeg.split(',')[1], mimeType: 'image/jpeg', dataUrl: jpeg });
     };
     img.src = dataUrl;
   });
 }
 
-async function onFilePicked(event){
-  const file = event.target.files[0];
-  if (!file) return;
-  const status = document.getElementById('uploadStatus');
-  const preview = document.getElementById('uploadPreview');
-  status.textContent = 'Reading image…';
-
-  let prepared;
-  try { prepared = await resizeImage(file); }
-  catch (e){ status.textContent = '✗ Could not read image: ' + e.message; return; }
-
-  preview.src = prepared.dataUrl;
-  preview.style.display = 'block';
-  status.textContent = '⏳ Sending to AI… this can take 5–15 seconds';
-
-  let payload = { mode: uploadMode, imageBase64: prepared.base64, mimeType: prepared.mimeType };
-
-  let resp;
-  try {
-    resp = await fetch('/api/extract', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-  } catch (e){
-    status.textContent = '✗ Network error: ' + e.message;
-    return;
-  }
-
+async function callExtract(prepared, apiMode){
+  const resp = await fetch('/api/extract', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: apiMode, imageBase64: prepared.base64, mimeType: prepared.mimeType })
+  });
   if (!resp.ok){
-    let detail = '';
-    try { const j = await resp.json(); detail = j.error + (j.detail ? ': '+j.detail : ''); } catch(_) { detail = await resp.text(); }
-    status.textContent = '✗ ' + (detail || 'Server error');
-    return;
+    let d=''; try { const j=await resp.json(); d=j.error+(j.detail?': '+j.detail:''); } catch(_){ d=await resp.text(); }
+    throw new Error(d||'Server error');
   }
-
-  const result = await resp.json();
-  if (!result.stickers || result.stickers.length === 0){
-    status.textContent = '✗ Nothing detected. Try a clearer photo.';
-    return;
-  }
-
-  // Show detected country for album uploads
-  if (uploadMode === 'album' && result.country) {
-    const countryDiv = document.getElementById('detectedCountry');
-    const countryName = document.getElementById('detectedCountryName');
-    const countryEmoji = flagOf((SEED.find(s => s.country === result.country) || {}).flag || '');
-    countryName.textContent = `${countryEmoji} ${result.country}`;
-    countryDiv.style.display = 'block';
-  }
-
-  status.textContent = '✓ Detected ' + result.stickers.length + ' stickers. Review and apply:';
-  renderExtractionResults(result);
+  return resp.json();
 }
 
-function renderExtractionResults(result){
-  const list = document.getElementById('uploadResultsList');
-  const resolved = []; // { sid, status, label, matched, checked }
+function matchSticker(country, last){
+  if (!country || !last) return null;
+  if (last==='BADGE') return SEED.find(s=>s.country===country && s.last==='BADGE')||null;
+  return SEED.find(s=>s.country===country && s.last===last)||null;
+}
 
-  if (result.mode === 'album'){
-    const country = result.country;
-    // Find stickers in DB for this country, indexed by their slot id
-    const countryStickers = SEED.filter(s => s.country === country);
-    const bySlot = {};
-    for (const s of countryStickers){
-      const num = s.id.split('-')[1]; // 'B','1','2',...
-      bySlot[num] = s;
+async function onFilesPicked(event){
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+
+  const status = document.getElementById('uploadStatus');
+  const thumbs = document.getElementById('uploadThumbs');
+  document.getElementById('uploadResults').style.display = 'none';
+  thumbs.innerHTML = '';
+
+  for (const file of files){
+    const url = URL.createObjectURL(file);
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'height:56px;border-radius:5px;object-fit:cover;border:1px solid var(--bdr)';
+    thumbs.appendChild(img);
+  }
+
+  const apiMode = uploadMode === 'album' ? 'album' : 'doubles';
+  const allResults = [];
+  let errors = 0;
+
+  for (let i = 0; i < files.length; i++){
+    status.textContent = files.length > 1
+      ? `⏳ Processing photo ${i+1} of ${files.length}…`
+      : '⏳ Sending to AI… 5–15 seconds';
+    let prepared;
+    try { prepared = await resizeImage(files[i]); } catch(e){ errors++; continue; }
+    let result;
+    try { result = await callExtract(prepared, apiMode); } catch(e){ errors++; status.textContent=`✗ Photo ${i+1}: ${e.message}`; continue; }
+    if (result.stickers && result.stickers.length > 0) allResults.push(result);
+  }
+
+  if (allResults.length === 0){
+    status.textContent = `✗ Nothing detected.${errors ? ' Some photos failed — try clearer images.' : ' Try a clearer photo.'}`;
+    return;
+  }
+
+  const total = allResults.reduce((n,r)=>n+r.stickers.length, 0);
+  status.textContent = `✓ Detected ${total} sticker(s) across ${allResults.length} photo(s).${errors?' ('+errors+' failed)':''} Review and apply:`;
+
+  if (uploadMode === 'album'){
+    const r = allResults[0];
+    if (r.country){
+      document.getElementById('detectedCountryName').textContent =
+        flagOf((SEED.find(s=>s.country===r.country)||{}).flag||'') + ' ' + r.country;
+      document.getElementById('detectedCountry').style.display = 'block';
     }
-    for (const row of result.stickers){
-      const slot = String(row.slot);
-      const match = bySlot[slot];
-      if (match){
-        resolved.push({
-          sid: match.id,
-          status: row.status,
-          label: `${match.id} ${match.last || 'BADGE'}`,
-          matched: true,
-          checked: true,
-        });
-      } else {
-        resolved.push({
-          sid: null,
-          status: row.status,
-          label: `slot ${slot} (not in DB)`,
-          matched: false,
-          checked: false,
-        });
-      }
-    }
+    renderAlbumResults(r);
+  } else if (uploadMode === 'batch'){
+    renderBatchResults(allResults);
   } else {
-    // doubles mode: star=have (missing→have), no star=double
+    renderOverrideResults(allResults);
+  }
+}
+
+function renderAlbumResults(result){
+  const country = result.country;
+  const bySlot = {};
+  for (const s of SEED.filter(s=>s.country===country)) bySlot[s.id.split('-')[1]] = s;
+  const resolved = result.stickers.map(row => {
+    const match = bySlot[String(row.slot)];
+    return { sid:match?match.id:null, status:row.status, label:match?`${match.id} ${match.last||'BADGE'}`:`slot ${row.slot} (not in DB)`, matched:!!match, checked:!!match, warn:null };
+  });
+  lastExtraction = resolved;
+  renderResolvedList(resolved);
+}
+
+function renderBatchResults(allResults){
+  const byId = {};
+  const unmatched = [];
+
+  for (const result of allResults){
     for (const row of result.stickers){
-      const country = row.country;
-      const last = (row.last || '').toUpperCase();
-      let match = null;
-      if (country && last){
-        if (last === 'BADGE'){
-          match = SEED.find(s => s.country === country && s.last === 'BADGE');
-        } else {
-          match = SEED.find(s => s.country === country && s.last === last);
-        }
+      const last = (row.last||'').toUpperCase();
+      const match = matchSticker(row.country, last);
+      if (match){
+        // 'have' (star) takes priority if sticker appears in multiple photos
+        if (!byId[match.id] || row.status==='have') byId[match.id] = { match, status:row.status };
+      } else {
+        const key = `${row.country}|${last}`;
+        if (!unmatched.find(u=>u.key===key)) unmatched.push({ key, country:row.country, last });
       }
-      // For no-star stickers (double): warn if already recorded as double in current list
-      let warn = null;
-      if (match && row.status === 'double') {
-        const cur = statusOf(me, match.id);
-        if (cur === 'double') warn = 'already in doubles — confirm';
-      }
-      resolved.push({
-        sid: match ? match.id : null,
-        status: row.status,
-        label: match
-          ? `${match.id} ${match.last}${match.first?' ('+match.first+')':''} · ${match.country}`
-          : `${country||'?'} ${last||'?'} — no match`,
-        matched: !!match,
-        checked: !!match && !warn,  // uncheck already-doubles — require explicit confirm
-        warn,
-      });
     }
   }
 
+  const resolved = [];
+  for (const { match, status } of Object.values(byId)){
+    const cur = statusOf(me, match.id);
+    let warn = null;
+    if (status==='have' && cur!=='missing')
+      warn = cur==='have' ? 'already have — check' : 'not in missing list';
+    if (status==='double' && cur==='double')
+      warn = 'already in doubles — confirm';
+    resolved.push({ sid:match.id, status, label:`${match.id} ${match.last}${match.first?' ('+match.first+')':''} · ${match.country}`, matched:true, checked:!warn, warn });
+  }
+  for (const u of unmatched)
+    resolved.push({ sid:null, status:'double', label:`${u.country||'?'} ${u.last||'?'} — no match`, matched:false, checked:false, warn:null });
+
+  resolved.sort((a,b)=>{
+    if (!a.matched && b.matched) return 1; if (a.matched && !b.matched) return -1;
+    if (a.status!==b.status) return a.status==='have'?-1:1;
+    return a.label.localeCompare(b.label);
+  });
+  lastExtraction = resolved;
+  renderResolvedList(resolved);
+}
+
+function renderOverrideResults(allResults){
+  const byId = {};
+  const unmatched = [];
+
+  for (const result of allResults){
+    for (const row of result.stickers){
+      const last = (row.last||'').toUpperCase();
+      const match = matchSticker(row.country, last);
+      if (match){ if(!byId[match.id]) byId[match.id]=match; }
+      else { const key=`${row.country}|${last}`; if(!unmatched.find(u=>u.key===key)) unmatched.push({key,country:row.country,last}); }
+    }
+  }
+
+  const newDoubleIds = new Set(Object.keys(byId));
+  overrideOldDoubles = SEED.filter(s => statusOf(me,s.id)==='double' && !newDoubleIds.has(s.id));
+
+  const resolved = [];
+  for (const match of Object.values(byId))
+    resolved.push({ sid:match.id, status:'double', label:`${match.id} ${match.last}${match.first?' ('+match.first+')':''} · ${match.country}`, matched:true, checked:true, warn:null });
+  for (const u of unmatched)
+    resolved.push({ sid:null, status:'double', label:`${u.country||'?'} ${u.last||'?'} — no match`, matched:false, checked:false, warn:null });
+  resolved.sort((a,b)=>a.label.localeCompare(b.label));
   lastExtraction = resolved;
 
+  const list = document.getElementById('uploadResultsList');
+  if (overrideOldDoubles.length > 0){
+    const names = escapeHtml(overrideOldDoubles.slice(0,6).map(s=>s.last).join(', ') + (overrideOldDoubles.length>6?'…':''));
+    list.innerHTML = `<div style="margin-bottom:8px;padding:8px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:6px;font-size:11px;color:var(--red)">⚠ <b>${overrideOldDoubles.length}</b> sticker(s) currently in your doubles list were NOT detected and will be moved back to <b>have</b>: ${names}</div>`;
+  } else { list.innerHTML = ''; }
+  renderResolvedList(resolved, true);
+}
+
+function renderResolvedList(resolved, append=false){
+  document.getElementById('uploadResultsHeader').textContent = uploadMode==='override-doubles'
+    ? `Detected ${resolved.filter(r=>r.matched).length} doubles — uncheck any that don't belong:`
+    : `Review ${resolved.length} detected stickers — uncheck to skip:`;
   let h = '';
-  resolved.forEach((r, i) => {
-    const badgeCls = r.warn ? 'b-warn' : (r.matched ? ('b-'+r.status) : 'b-unmatched');
-    const statusLabel = r.status === 'have' ? '⭐ HAVE' : r.status.toUpperCase();
-    const warnChip = r.warn ? `<span class="warn-chip">⚠ ${r.warn}</span>` : '';
+  resolved.forEach((r,i) => {
+    const badgeCls = r.warn ? 'b-warn' : (r.matched ? 'b-'+r.status : 'b-unmatched');
+    const statusLabel = r.status==='have' ? '⭐ HAVE' : r.status.toUpperCase();
+    const warnChip = r.warn ? `<span class="warn-chip">⚠ ${escapeHtml(r.warn)}</span>` : '';
     h += `<div class="urow${r.warn?' urow-warn':''}">
       <input type="checkbox" id="urow_${i}" ${r.checked?'checked':''} ${r.matched?'':'disabled'} onchange="lastExtraction[${i}].checked=this.checked">
       <span class="badge ${badgeCls}">${statusLabel}</span>
-      <span style="flex:1;color:${r.matched?'var(--txt)':'var(--muted)'}">${r.label}${warnChip}</span>
+      <span style="flex:1;color:${r.matched?'var(--txt)':'var(--muted)'}">${escapeHtml(r.label)}${warnChip}</span>
     </div>`;
   });
-  list.innerHTML = h;
+  const list = document.getElementById('uploadResultsList');
+  if (append) list.innerHTML += h; else list.innerHTML = h;
   document.getElementById('uploadResults').style.display = 'block';
 }
 
 async function applyExtraction(){
   if (!lastExtraction) return;
-  const toApply = lastExtraction.filter(r => r.checked && r.matched);
-  if (toApply.length === 0){ alert('Nothing selected to apply.'); return; }
+  const toApply = lastExtraction.filter(r=>r.checked && r.matched);
+  if (toApply.length===0 && overrideOldDoubles.length===0){ alert('Nothing to apply.'); return; }
 
   const btn = document.getElementById('applyBtn');
   btn.disabled = true; btn.textContent = '⏳ Applying…';
-
   writing++;
   try {
-    // Build upsert rows in one call
-    const rows = toApply.map(r => ({
-      player_id: me,
-      sticker_id: r.sid,
-      status: r.status,
-      updated_at: new Date().toISOString()
-    }));
-    const { error } = await sb.from('sticker_status').upsert(rows);
+    const now = new Date().toISOString();
+    let allRows;
+    if (uploadMode === 'override-doubles'){
+      const setDouble = toApply.map(r=>({ player_id:me, sticker_id:r.sid, status:'double', updated_at:now }));
+      const demote   = overrideOldDoubles.map(s=>({ player_id:me, sticker_id:s.id, status:'have', updated_at:now }));
+      allRows = [...setDouble, ...demote];
+    } else {
+      allRows = toApply.map(r=>({ player_id:me, sticker_id:r.sid, status:r.status, updated_at:now }));
+    }
+    const { error } = await sb.from('sticker_status').upsert(allRows);
     if (error) throw error;
-    // update local cache
     if (!statusByPlayer[me]) statusByPlayer[me] = {};
-    for (const r of toApply) statusByPlayer[me][r.sid] = r.status;
+    for (const r of allRows) statusByPlayer[me][r.sticker_id] = r.status;
     render();
     closeUpload();
-    showErr('✓ Applied '+toApply.length+' updates');
-  } catch (e) {
-    showErr('Apply failed: ' + (e.message||e));
+    const msg = uploadMode==='override-doubles'
+      ? `✓ Doubles updated: ${toApply.length} set as double, ${overrideOldDoubles.length} moved to have`
+      : `✓ Applied ${toApply.length} updates`;
+    showErr(msg);
+  } catch(e){
+    showErr('Apply failed: '+(e.message||e));
   } finally {
     writing--;
-    btn.disabled = false; btn.textContent = '✓ Apply changes';
+    btn.disabled = false; btn.textContent = '✓ Apply';
   }
 }
 </script>
