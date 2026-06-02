@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FIFA WC 2026 — Panini Swaps</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0c0c18;--sur:#141422;--card:#1a1a2e;--bdr:rgba(255,255,255,.07);--gold:#f59e0b;--teal:#2dd4bf;--red:#ef4444;--blue:#3b82f6;--green:#10b981;--purple:#a855f7;--muted:#64748b;--txt:#f1f5f9}
+body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;min-height:100vh;font-size:14px}
+
+#splash{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:20px}
+.sp-title{text-align:center}
+.sp-title h1{font-weight:900;font-size:clamp(24px,7vw,42px);letter-spacing:.04em;line-height:1.1}
+.sp-title h1 span{color:var(--gold)}
+.sp-title p{font-size:13px;color:var(--muted);margin-top:6px;letter-spacing:.06em}
+.sp-sub{font-size:12px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.sp-cards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;max-width:720px}
+.sp-card{cursor:pointer;border-radius:14px;padding:20px 26px;text-align:center;border:2px solid var(--bdr);background:var(--card);transition:all .2s;min-width:130px;flex:0 0 auto}
+.sp-card:hover{transform:translateY(-3px)}
+.sp-card .av{font-size:34px;margin-bottom:6px}
+.sp-card .pn{font-weight:900;font-size:18px;letter-spacing:.04em}
+.sp-card .ps{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.sp-foot{font-size:11px;color:#475569;text-align:center;max-width:340px}
+.sp-foot a{color:var(--muted);text-decoration:underline}
+.spinner{color:var(--muted);font-size:12px}
+
+#app{display:none}
+header{position:sticky;top:0;z-index:99;background:rgba(12,12,24,.97);border-bottom:1px solid var(--bdr);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.logo{font-weight:900;font-size:15px;white-space:nowrap;line-height:1.2}
+.logo span{color:var(--gold)}
+.logo small{display:block;font-size:9px;letter-spacing:.14em;color:var(--muted);font-weight:400;text-transform:uppercase}
+.pbadge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:1px solid}
+.sw{flex:1;min-width:110px;max-width:220px;position:relative}
+.sw input{width:100%;padding:6px 10px 6px 27px;background:var(--sur);border:1px solid var(--bdr);border-radius:7px;color:var(--txt);font-size:12px;outline:none}
+.si{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px}
+.csel{padding:6px 8px;background:var(--sur);border:1px solid var(--bdr);border-radius:7px;color:var(--txt);font-size:12px;outline:none;max-width:160px;cursor:pointer}
+.vtab{display:flex;background:var(--sur);border-radius:7px;padding:2px;gap:2px}
+.vb{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:none;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+.vb.on{background:var(--card);color:var(--txt)}
+.editBtn{padding:5px 11px;border-radius:7px;font-size:11px;font-weight:700;letter-spacing:.04em;border:1px solid rgba(255,255,255,.12);background:transparent;color:#94a3b8;cursor:pointer;white-space:nowrap}
+.editBtn.on{background:var(--gold);color:#0c0c18;border-color:transparent}
+
+.eb{background:rgba(245,158,11,.08);border-bottom:1px solid rgba(245,158,11,.2);padding:8px 14px;font-size:12px;color:#fcd34d;line-height:1.6}
+.fbar{display:flex;gap:3px;flex-wrap:wrap;padding:8px 14px 0;align-items:center}
+.fb{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--bdr);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+.fb.on{border-color:transparent;color:#0c0c18}
+.f-all.on{background:var(--gold)}.f-miss.on{background:var(--red)}.f-dbl.on{background:var(--blue)}.f-have.on{background:#334155;color:var(--txt)}.f-swap.on{background:var(--teal)}
+.sync{margin-left:auto;font-size:10px;color:#475569;align-self:center;white-space:nowrap}
+
+.sbar{display:flex;background:var(--sur);border-bottom:1px solid var(--bdr);padding:0 14px;overflow-x:auto;margin-top:8px}
+.sc{padding:7px 12px;text-align:center;white-space:nowrap;border-bottom:3px solid transparent;flex-shrink:0}
+.sc .n{font-weight:900;font-size:18px;line-height:1}
+.sc .l{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:1px}
+.sc.s-miss{border-color:var(--red)}.sc.s-miss .n{color:var(--red)}
+.sc.s-dbl{border-color:var(--blue)}.sc.s-dbl .n{color:var(--blue)}
+.sc.s-have{border-color:var(--green)}.sc.s-have .n{color:var(--green)}
+.sc.s-swap{border-color:var(--teal)}.sc.s-swap .n{color:var(--teal)}
+.sc.s-tot{border-color:var(--gold)}.sc.s-tot .n{color:var(--gold)}
+
+main{padding:12px 14px;max-width:1200px;margin:0 auto}
+.swappanel{border-radius:8px;padding:10px 13px;margin-bottom:12px;background:rgba(45,212,191,.04);border:1px solid rgba(45,212,191,.18)}
+.swappanel h3{font-weight:900;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--teal);margin-bottom:8px}
+.swapgrid{display:flex;flex-wrap:wrap;gap:7px}
+.swapchip{background:var(--card);border:1.5px solid;border-radius:9px;padding:7px 10px;min-width:160px;flex:1 1 160px;max-width:230px}
+.swapchip .dir{font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.swapchip .sname{font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swapchip .sid{font-size:9px;color:var(--muted)}
+.swapchip .sctry{font-size:11px;color:#94a3b8;margin-bottom:5px}
+.swapchip .vbtn{width:100%;padding:4px 0;border-radius:6px;border:1px solid rgba(45,212,191,.4);background:rgba(45,212,191,.12);color:var(--teal);font-size:11px;font-weight:900;letter-spacing:.04em;cursor:pointer}
+
+.cs{margin-bottom:14px}
+.ch{display:flex;align-items:center;gap:6px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--bdr)}
+.pn{font-size:10px;font-weight:900;color:#475569;background:rgba(255,255,255,.05);border-radius:4px;padding:1px 5px;min-width:18px;text-align:center}
+.cf{font-size:18px;line-height:1}
+.cn{font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.ctags{display:flex;gap:3px;flex-wrap:wrap}
+.ctag{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.ct-ok{background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.18)}
+.ct-miss{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.15)}
+.ct-dbl{background:rgba(59,130,246,.08);color:var(--blue);border:1px solid rgba(59,130,246,.15)}
+.ct-swap{background:rgba(45,212,191,.08);color:var(--teal);border:1px solid rgba(45,212,191,.18)}
+.cc{margin-left:auto;font-size:9px;color:var(--muted)}
+.sg{display:flex;flex-wrap:wrap;gap:5px}
+.sk{position:relative;background:var(--card);border:1.5px solid var(--bdr);border-radius:7px;padding:6px 8px 6px 11px;min-width:120px;max-width:160px;flex:1 1 120px;overflow:hidden}
+.sk.swap{border-color:rgba(45,212,191,.4)!important}
+.sk.edit{cursor:pointer}
+.sk::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}
+.s-have::before{background:#1e3a5f}.s-missing::before{background:var(--red)}.s-double::before{background:var(--blue)}
+.sk-id{font-size:9px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.sk-f{font-size:9px;color:var(--muted);line-height:1.2;text-transform:uppercase;margin-top:1px}
+.sk-l{font-weight:900;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}
+.sk-c{font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:9px;font-weight:700;padding:1px 4px;border-radius:6px;white-space:nowrap;display:inline-block;margin-right:2px;margin-bottom:2px}
+.t-swap-get{background:rgba(45,212,191,.14);color:var(--teal);border:1px solid rgba(45,212,191,.25)}
+.t-swap-give{background:rgba(168,85,247,.14);color:#c084fc;border:1px solid rgba(168,85,247,.22)}
+.t-opp-m{background:rgba(168,85,247,.1);color:#c084fc;border:1px solid rgba(168,85,247,.18)}
+.t-opp-d{background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.18)}
+.t-opp-h{background:rgba(30,58,95,.4);color:#60a5fa;border:1px solid rgba(59,130,246,.1)}
+.t-mine{font-weight:900}
+.t-mine-have{background:rgba(100,116,139,.15);color:#94a3b8}
+.t-mine-double{background:rgba(59,130,246,.15);color:var(--blue)}
+.t-mine-missing{background:rgba(239,68,68,.15);color:var(--red)}
+
+#playerView{display:none}
+.plh{display:grid;grid-template-columns:65px 1fr 95px 1fr 75px 75px;gap:5px;padding:5px 10px;background:var(--sur);border-radius:6px;margin-bottom:4px;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.plr{display:grid;grid-template-columns:65px 1fr 95px 1fr 75px 75px;gap:5px;padding:6px 10px;border-radius:6px;margin-bottom:3px;background:var(--card);border:1px solid var(--bdr);align-items:center}
+.pl-id{font-size:9px;color:var(--muted);letter-spacing:.04em}
+.pl-nm{font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-cl{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-ct{font-size:11px;display:flex;align-items:center;gap:3px;white-space:nowrap;overflow:hidden}
+.pl-st{font-size:10px;font-weight:700;text-align:center;white-space:nowrap}
+
+.nr{text-align:center;padding:36px;color:var(--muted);display:none}.nr.show{display:block}
+.err{position:fixed;bottom:14px;left:14px;right:14px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:var(--red);padding:8px 12px;border-radius:7px;font-size:12px;display:none;z-index:200}
+
+@media (max-width:640px){
+  .plh,.plr{grid-template-columns:55px 1fr 75px 60px}
+  .plh > div:nth-child(3),.plr > div:nth-child(3){display:none}
+  .plh > div:nth-child(4),.plr > div:nth-child(4){display:none}
+}
+
+.uploadBtn{padding:6px 10px;border-radius:6px;border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.15);color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.03em}
+.uploadBtn:hover{background:rgba(245,158,11,.25)}
+.urow{display:flex;gap:6px;align-items:center;padding:5px 6px;border-radius:5px;margin-bottom:3px;background:var(--card)}
+.urow .badge{font-size:9px;font-weight:900;padding:1px 5px;border-radius:3px;letter-spacing:.04em}
+.urow .b-have{background:rgba(100,116,139,.2);color:#94a3b8}
+.urow .b-double{background:rgba(59,130,246,.2);color:var(--blue)}
+.urow .b-missing{background:rgba(239,68,68,.2);color:var(--red)}
+.urow .b-unmatched{background:rgba(245,158,11,.2);color:var(--gold)}
+.urow input[type=checkbox]{accent-color:var(--gold)}
+</style>
+</head>
+<body>
+
+<!-- ══ SPLASH ══ -->
+<div id="splash">
+  <div class="sp-title">
+    <h1>FIFA WC <span>2026</span></h1>
+    <p>Panini Sticker Swap Tracker</p>
+  </div>
+  <div class="sp-sub">Who are you?</div>
+  <div class="sp-cards" id="splashCards"><div class="spinner">Loading players…</div></div>
+  <div class="sp-foot">
+    Updates are shared live with everyone. <a href="?admin=1">Admin</a>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <header>
+    <div class="logo">FIFA WC <span>2026</span><small>Panini Swaps</small></div>
+    <button class="pbadge" id="pbadge" onclick="backSplash()">…</button>
+    <div class="sw"><span class="si">⚽</span><input id="qi" placeholder="Search…" oninput="setQ(this.value)"></div>
+    <select class="csel" id="csel" onchange="setCountry(this.value)"><option value="">All countries</option></select>
+    <div class="vtab">
+      <button class="vb on" id="vTB" onclick="setV('team')">Teams</button>
+      <button class="vb" id="vPB" onclick="setV('player')">Players</button>
+    </div>
+    <button class="editBtn" id="editBtn" onclick="toggleEdit()">✎ Edit</button>
+  </header>
+  <div class="eb" id="editBanner" style="display:none">
+  ✎ Editing — tap any sticker to cycle <span style="color:var(--muted)">have</span> → <span style="color:var(--blue)">double</span> → <span style="color:var(--red)">missing</span>. Saves automatically.
+  <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+    <button class="uploadBtn" onclick="openUpload('album')">📷 Scan album page</button>
+    <button class="uploadBtn" onclick="openUpload('doubles')">📷 Scan doubles pile</button>
+  </div>
+</div>
+
+<!-- Upload modal -->
+<div id="uploadModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:14px">
+  <div style="background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:18px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto">
+    <h3 id="uploadTitle" style="font-size:14px;font-weight:900;margin-bottom:10px;color:var(--gold)">Upload</h3>
+
+    <div id="albumExtra" style="display:none;margin-bottom:12px">
+      <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Which country?</label>
+      <select id="uploadCountry" class="csel" style="width:100%;max-width:none"></select>
+    </div>
+
+    <input type="file" id="uploadFile" accept="image/*" style="display:none" onchange="onFilePicked(event)">
+    <button class="uploadBtn" style="width:100%;padding:12px" onclick="document.getElementById('uploadFile').click()">📎 Choose photo</button>
+
+    <div id="uploadStatus" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+    <img id="uploadPreview" style="display:none;max-width:100%;margin-top:10px;border-radius:6px;max-height:160px;object-fit:contain;background:#000">
+
+    <div id="uploadResults" style="margin-top:12px;display:none">
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:6px">Detected (review then apply):</div>
+      <div id="uploadResultsList" style="max-height:280px;overflow-y:auto;background:var(--sur);border-radius:6px;padding:8px;font-size:12px"></div>
+      <div style="margin-top:10px;display:flex;gap:6px">
+        <button class="uploadBtn" style="flex:1" id="applyBtn" onclick="applyExtraction()">✓ Apply changes</button>
+        <button class="uploadBtn" style="background:transparent;border:1px solid var(--bdr);color:var(--muted)" onclick="closeUpload()">Cancel</button>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;text-align:right">
+      <button onclick="closeUpload()" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer">Close ✕</button>
+    </div>
+  </div>
+</div>
+  <div class="fbar">
+    <button class="fb f-all on" onclick="setF('all',this)">All</button>
+    <button class="fb f-miss"  onclick="setF('miss',this)">Missing</button>
+    <button class="fb f-dbl"   onclick="setF('dbl',this)">Doubles</button>
+    <button class="fb f-have"  onclick="setF('have',this)">Have</button>
+    <button class="fb f-swap"  onclick="setF('swap',this)">⇄ Swaps</button>
+    <span class="sync" id="sync"></span>
+  </div>
+  <div class="sbar" id="sbar"></div>
+  <main>
+    <div class="swappanel" id="swappanel">
+      <h3 id="swaptitle">⇄ Swaps</h3>
+      <div class="swapgrid" id="swapgrid"></div>
+    </div>
+    <div class="nr" id="nr">No stickers match.</div>
+    <div id="teamView"></div>
+    <div id="playerView">
+      <div class="plh"><div>ID</div><div>Player</div><div>Club</div><div>Country</div><div style="text-align:center">Mine</div><div style="text-align:center">Theirs</div></div>
+      <div id="playerList"></div>
+    </div>
+  </main>
+</div>
+
+<div class="err" id="err"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://bllhrtoctkzokzvbabme.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_QYb-zz1AKtbCjinAKUIUDA_ilCfw3cG';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── DATA (embedded) ───────────────────────────────────────────────────
+const SEED = [{"id":"ALG-B","first":"","last":"BADGE","club":"","country":"Algeria","flag":"DZ","redha":"double","mat":"double","page":37},{"id":"ALG-1","first":"Alexis","last":"GUENDOUZ","club":"MC Alger","country":"Algeria","flag":"DZ","redha":"double","mat":"have","page":37},{"id":"ARG-B","first":"","last":"BADGE","club":"","country":"Argentina","flag":"AR","redha":"have","mat":"missing","page":36},{"id":"ARG-1","first":"Emiliano","last":"MARTINEZ","club":"Aston Villa","country":"Argentina","flag":"AR","redha":"missing","mat":"have","page":36},{"id":"ARG-2","first":"Nahuel","last":"MOLINA","club":"Atletico Madrid","country":"Argentina","flag":"AR","redha":"missing","mat":"have","page":36},{"id":"ARG-3","first":"Cristian","last":"ROMERO","club":"Tottenham","country":"Argentina","flag":"AR","redha":"missing","mat":"have","page":36},{"id":"ARG-4","first":"Enzo","last":"FERNANDEZ","club":"Chelsea","country":"Argentina","flag":"AR","redha":"have","mat":"have","page":36},{"id":"ARG-5","first":"Alexis","last":"MAC ALLISTER","club":"Liverpool","country":"Argentina","flag":"AR","redha":"have","mat":"missing","page":36},{"id":"ARG-6","first":"Rodrigo","last":"DE PAUL","club":"Atletico Madrid","country":"Argentina","flag":"AR","redha":"have","mat":"have","page":36},{"id":"ARG-7","first":"Giuliano","last":"SIMEONE","club":"Atletico Madrid","country":"Argentina","flag":"AR","redha":"have","mat":"missing","page":36},{"id":"ARG-8","first":"Julian","last":"ALVAREZ","club":"Atletico Madrid","country":"Argentina","flag":"AR","redha":"missing","mat":"have","page":36},{"id":"ARG-9","first":"Lionel","last":"MESSI","club":"Inter Miami","country":"Argentina","flag":"AR","redha":"missing","mat":"have","page":36},{"id":"ARG-10","first":"Lautaro","last":"MARTINEZ","club":"Inter Milan","country":"Argentina","flag":"AR","redha":"have","mat":"have","page":36},{"id":"ARG-11","first":"Nicolas","last":"OTAMENDI","club":"Benfica","country":"Argentina","flag":"AR","redha":"have","mat":"have","page":36},{"id":"AUS-B","first":"","last":"BADGE","club":"","country":"Australia","flag":"AU","redha":"have","mat":"have","page":14},{"id":"AUS-1","first":"Mathew","last":"RYAN","club":"Real Sociedad","country":"Australia","flag":"AU","redha":"have","mat":"missing","page":14},{"id":"AUS-2","first":"Harry","last":"SOUTTAR","club":"Leicester City","country":"Australia","flag":"AU","redha":"have","mat":"double","page":14},{"id":"AUS-3","first":"Aaron","last":"ONEILL","club":"New York City FC","country":"Australia","flag":"AU","redha":"have","mat":"have","page":14},{"id":"AUS-4","first":"Connor","last":"METCALFE","club":"FC Midtjylland","country":"Australia","flag":"AU","redha":"have","mat":"have","page":14},{"id":"AUS-5","first":"Lewis","last":"MILLER","club":"Blackburn Rovers","country":"Australia","flag":"AU","redha":"have","mat":"have","page":14},{"id":"AUS-6","first":"Jackson","last":"IRVINE","club":"St Pauli","country":"Australia","flag":"AU","redha":"missing","mat":"missing","page":14},{"id":"AUS-7","first":"Riley","last":"MCGREE","club":"Middlesbrough","country":"Australia","flag":"AU","redha":"have","mat":"have","page":14},{"id":"AUS-8","first":"Kuol","last":"VENGI","club":"Aberdeen FC","country":"Australia","flag":"AU","redha":"have","mat":"missing","page":14},{"id":"AUS-9","first":"Aziz","last":"BEHICH","club":"Melbourne Victory","country":"Australia","flag":"AU","redha":"have","mat":"have","page":14},{"id":"AUS-10","first":"Cameron","last":"BURGESS","club":"Ipswich Town","country":"Australia","flag":"AU","redha":"have","mat":"have","page":14},{"id":"AUS-11","first":"Nestory","last":"IRANKUNDA","club":"FC Basel","country":"Australia","flag":"AU","redha":"have","mat":"have","page":14},{"id":"AUT-B","first":"","last":"BADGE","club":"","country":"Austria","flag":"AT","redha":"have","mat":"have","page":38},{"id":"AUT-1","first":"Alexander","last":"SCHLAGER","club":"FC Salzburg","country":"Austria","flag":"AT","redha":"have","mat":"have","page":38},{"id":"AUT-2","first":"David","last":"ALABA","club":"Real Madrid","country":"Austria","flag":"AT","redha":"have","mat":"have","page":38},{"id":"AUT-3","first":"Konrad","last":"LAIMER","club":"Bayern Munich","country":"Austria","flag":"AT","redha":"have","mat":"missing","page":38},{"id":"AUT-4","first":"Nicolas","last":"SEIWALD","club":"RB Leipzig","country":"Austria","flag":"AT","redha":"have","mat":"have","page":38},{"id":"AUT-5","first":"Marcel","last":"SABITZER","club":"Borussia Dortmund","country":"Austria","flag":"AT","redha":"have","mat":"missing","page":38},{"id":"AUT-6","first":"Florian","last":"GRILLITSCH","club":"SC Braga","country":"Austria","flag":"AT","redha":"double","mat":"missing","page":38},{"id":"AUT-7","first":"Marko","last":"ARNAUTOVIC","club":"Inter Milan","country":"Austria","flag":"AT","redha":"have","mat":"missing","page":38},{"id":"AUT-8","first":"Kevin","last":"DANSO","club":"RC Lens","country":"Austria","flag":"AT","redha":"have","mat":"have","page":38},{"id":"AUT-9","first":"Philipp","last":"LIENHART","club":"Real Madrid","country":"Austria","flag":"AT","redha":"have","mat":"have","page":38},{"id":"AUT-10","first":"Christoph","last":"BAUMGARTNER","club":"RB Leipzig","country":"Austria","flag":"AT","redha":"missing","mat":"have","page":38},{"id":"AUT-11","first":"Michael","last":"GREGORITSCH","club":"SC Freiburg","country":"Austria","flag":"AT","redha":"have","mat":"have","page":38},{"id":"BEL-B","first":"","last":"BADGE","club":"","country":"Belgium","flag":"BE","redha":"have","mat":"have","page":24},{"id":"BEL-1","first":"Thibaut","last":"COURTOIS","club":"Real Madrid CF","country":"Belgium","flag":"BE","redha":"have","mat":"missing","page":24},{"id":"BEL-2","first":"Arthur","last":"THEATE","club":"Eintracht Frankfurt","country":"Belgium","flag":"BE","redha":"have","mat":"have","page":24},{"id":"BEL-3","first":"Timothy","last":"CASTAGNE","club":"Fulham FC","country":"Belgium","flag":"BE","redha":"have","mat":"have","page":24},{"id":"BEL-4","first":"Maxim","last":"DE CUYPER","club":"Brighton & Hove Albion","country":"Belgium","flag":"BE","redha":"have","mat":"have","page":24},{"id":"BEL-5","first":"Youri","last":"TIELEMANS","club":"Aston Villa FC","country":"Belgium","flag":"BE","redha":"have","mat":"missing","page":24},{"id":"BEL-6","first":"Kevin","last":"DE BRUYNE","club":"SSC Napoli","country":"Belgium","flag":"BE","redha":"have","mat":"have","page":24},{"id":"BEL-7","first":"Amadou","last":"ONANA","club":"Aston Villa FC","country":"Belgium","flag":"BE","redha":"have","mat":"missing","page":24},{"id":"BEL-8","first":"Jeremy","last":"DOKU","club":"Manchester City FC","country":"Belgium","flag":"BE","redha":"have","mat":"have","page":24},{"id":"BEL-9","first":"Charles","last":"DE KETELAERE","club":"Atalanta BC","country":"Belgium","flag":"BE","redha":"have","mat":"have","page":24},{"id":"BEL-10","first":"Leandro","last":"TROSSARD","club":"Arsenal FC","country":"Belgium","flag":"BE","redha":"have","mat":"have","page":24},{"id":"BEL-11","first":"Romelu","last":"LUKAKU","club":"SSC Napoli","country":"Belgium","flag":"BE","redha":"have","mat":"missing","page":24},{"id":"BIH-B","first":"","last":"BADGE","club":"","country":"Bosnia","flag":"BA","redha":"have","mat":"have","page":5},{"id":"BIH-1","first":"Nikola","last":"VASILJ","club":"St Pauli","country":"Bosnia","flag":"BA","redha":"have","mat":"have","page":5},{"id":"BIH-2","first":"Damir","last":"DEDOVIC","club":"AS Monaco","country":"Bosnia","flag":"BA","redha":"have","mat":"have","page":5},{"id":"BIH-3","first":"Sead","last":"KOLASINAC","club":"Marseille","country":"Bosnia","flag":"BA","redha":"missing","mat":"have","page":5},{"id":"BIH-4","first":"Tarik","last":"MUHAREMOVIC","club":"VfB Stuttgart","country":"Bosnia","flag":"BA","redha":"missing","mat":"have","page":5},{"id":"BIH-5","first":"Nikola","last":"KATIC","club":"Rangers","country":"Bosnia","flag":"BA","redha":"missing","mat":"have","page":5},{"id":"BIH-6","first":"Benjamin","last":"TAHIROVIC","club":"Ajax","country":"Bosnia","flag":"BA","redha":"have","mat":"have","page":5},{"id":"BIH-7","first":"Noa","last":"SUNJIC","club":"FC Partizan","country":"Bosnia","flag":"BA","redha":"have","mat":"missing","page":5},{"id":"BIH-8","first":"Ermedin","last":"DEMIROVIC","club":"VfB Stuttgart","country":"Bosnia","flag":"BA","redha":"have","mat":"have","page":5},{"id":"BIH-9","first":"Edin","last":"BAJRAKTAREVIC","club":"New England","country":"Bosnia","flag":"BA","redha":"have","mat":"have","page":5},{"id":"BIH-10","first":"Edin","last":"DZEKO","club":"FC Schalke 04","country":"Bosnia","flag":"BA","redha":"double","mat":"missing","page":5},{"id":"BIH-11","first":"Sasa","last":"KADRIC","club":"Anderlecht","country":"Bosnia","flag":"BA","redha":"have","mat":"have","page":5},{"id":"BRA-B","first":"","last":"BADGE","club":"","country":"Brazil","flag":"BR","redha":"have","mat":"double","page":8},{"id":"BRA-1","first":"","last":"ALISSON","club":"Liverpool","country":"Brazil","flag":"BR","redha":"have","mat":"missing","page":8},{"id":"BRA-2","first":"","last":"MARQUINHOS","club":"PSG","country":"Brazil","flag":"BR","redha":"have","mat":"missing","page":8},{"id":"BRA-3","first":"Eder","last":"MILITAO","club":"Real Madrid","country":"Brazil","flag":"BR","redha":"have","mat":"missing","page":8},{"id":"BRA-4","first":"Gabriel","last":"MAGALHAES","club":"Arsenal","country":"Brazil","flag":"BR","redha":"have","mat":"have","page":8},{"id":"BRA-5","first":"","last":"CASEMIRO","club":"Manchester Utd","country":"Brazil","flag":"BR","redha":"missing","mat":"missing","page":8},{"id":"BRA-6","first":"Bruno","last":"GUIMARAES","club":"Newcastle","country":"Brazil","flag":"BR","redha":"missing","mat":"missing","page":8},{"id":"BRA-7","first":"Vinicius","last":"JUNIOR","club":"Real Madrid","country":"Brazil","flag":"BR","redha":"have","mat":"have","page":8},{"id":"BRA-8","first":"","last":"RODRYGO","club":"Real Madrid","country":"Brazil","flag":"BR","redha":"missing","mat":"have","page":8},{"id":"BRA-9","first":"Matheus","last":"CUNHA","club":"Wolverhampton","country":"Brazil","flag":"BR","redha":"have","mat":"have","page":8},{"id":"BRA-10","first":"","last":"RAPHINHA","club":"FC Barcelona","country":"Brazil","flag":"BR","redha":"have","mat":"have","page":8},{"id":"BRA-11","first":"","last":"ESTEVAO","club":"Chelsea","country":"Brazil","flag":"BR","redha":"have","mat":"have","page":8},{"id":"CPV-B","first":"","last":"BADGE","club":"","country":"Cabo Verde","flag":"CV","redha":"have","mat":"missing","page":29},{"id":"CPV-1","first":"","last":"VOZINHA","club":"Celta Vigo","country":"Cabo Verde","flag":"CV","redha":"missing","mat":"missing","page":29},{"id":"CPV-2","first":"Logan","last":"COSTA","club":"Villarreal","country":"Cabo Verde","flag":"CV","redha":"have","mat":"have","page":29},{"id":"CPV-3","first":"Joao","last":"PAULO","club":"Red Bull Salzburg","country":"Cabo Verde","flag":"CV","redha":"have","mat":"have","page":29},{"id":"CPV-4","first":"Kevin","last":"PINA","club":"Vitoria de Guimaraes","country":"Cabo Verde","flag":"CV","redha":"have","mat":"double","page":29},{"id":"CPV-5","first":"Janio","last":"MONTEIRO","club":"Pyramids FC","country":"Cabo Verde","flag":"CV","redha":"have","mat":"have","page":29},{"id":"CPV-6","first":"Wande","last":"SEMEDO","club":"Greuther Furth","country":"Cabo Verde","flag":"CV","redha":"have","mat":"have","page":29},{"id":"CPV-7","first":"Pino","last":"MENDES","club":"Eskisehirspor","country":"Cabo Verde","flag":"CV","redha":"have","mat":"have","page":29},{"id":"CPV-8","first":"","last":"PICO","club":"Villarreal","country":"Cabo Verde","flag":"CV","redha":"have","mat":"have","page":29},{"id":"CPV-9","first":"Steven","last":"MOREIRA","club":"Columbus Crew","country":"Cabo Verde","flag":"CV","redha":"double","mat":"have","page":29},{"id":"CPV-10","first":"Jovane","last":"CABRAL","club":"Sporting CP","country":"Cabo Verde","flag":"CV","redha":"missing","mat":"missing","page":29},{"id":"CPV-11","first":"Dailon","last":"LIVRAMENTO","club":"Nottingham Forest","country":"Cabo Verde","flag":"CV","redha":"missing","mat":"missing","page":29},{"id":"CAN-B","first":"","last":"BADGE","club":"","country":"Canada","flag":"CA","redha":"have","mat":"have","page":4},{"id":"CAN-1","first":"Dayne","last":"ST CLAIR","club":"Minnesota United","country":"Canada","flag":"CA","redha":"have","mat":"have","page":4},{"id":"CAN-2","first":"Alphonso","last":"DAVIES","club":"Bayern Munich","country":"Canada","flag":"CA","redha":"missing","mat":"have","page":4},{"id":"CAN-3","first":"Stephen","last":"EUSTAQUIO","club":"FC Porto","country":"Canada","flag":"CA","redha":"have","mat":"have","page":4},{"id":"CAN-4","first":"Derek","last":"CORNELIUS","club":"Vancouver Whitecaps","country":"Canada","flag":"CA","redha":"missing","mat":"have","page":4},{"id":"CAN-5","first":"Ismael","last":"KONE","club":"US Sassuolo","country":"Canada","flag":"CA","redha":"have","mat":"double","page":4},{"id":"CAN-6","first":"Jacob","last":"SHAFFELBURG","club":"Los Angeles FC","country":"Canada","flag":"CA","redha":"have","mat":"have","page":4},{"id":"CAN-7","first":"Niko","last":"SMOUR","club":"San Jose","country":"Canada","flag":"CA","redha":"have","mat":"have","page":4},{"id":"CAN-8","first":"Tajon","last":"BUCHANAN","club":"Villarreal","country":"Canada","flag":"CA","redha":"have","mat":"have","page":4},{"id":"CAN-9","first":"Cyle","last":"LARIN","club":"Fenerbahce","country":"Canada","flag":"CA","redha":"have","mat":"have","page":4},{"id":"CAN-10","first":"Richie","last":"LARYEA","club":"Toronto FC","country":"Canada","flag":"CA","redha":"have","mat":"double","page":4},{"id":"CAN-11","first":"Jonathan","last":"DAVID","club":"LOSC Lille","country":"Canada","flag":"CA","redha":"have","mat":"have","page":4},{"id":"COL-B","first":"","last":"BADGE","club":"","country":"Colombia","flag":"CO","redha":"have","mat":"have","page":43},{"id":"COL-1","first":"Daniel","last":"VARGAS","club":"Atlas FC","country":"Colombia","flag":"CO","redha":"have","mat":"have","page":43},{"id":"COL-2","first":"Davinson","last":"SANCHEZ","club":"Girona FC","country":"Colombia","flag":"CO","redha":"missing","mat":"double","page":43},{"id":"COL-3","first":"Yerry","last":"MINA","club":"Club America","country":"Colombia","flag":"CO","redha":"have","mat":"have","page":43},{"id":"COL-4","first":"Daniel","last":"MUNOZ","club":"Crystal Palace","country":"Colombia","flag":"CO","redha":"missing","mat":"have","page":43},{"id":"COL-5","first":"James","last":"RODRIGUEZ","club":"Rayo Vallecano","country":"Colombia","flag":"CO","redha":"missing","mat":"have","page":43},{"id":"COL-6","first":"Jefferson","last":"LERMA","club":"Crystal Palace","country":"Colombia","flag":"CO","redha":"have","mat":"double","page":43},{"id":"COL-7","first":"Richard","last":"RIOS","club":"Palmeiras","country":"Colombia","flag":"CO","redha":"missing","mat":"have","page":43},{"id":"COL-8","first":"Juan Fernando","last":"QUINTERO","club":"Racing Club","country":"Colombia","flag":"CO","redha":"have","mat":"have","page":43},{"id":"COL-9","first":"Luis","last":"DIAZ","club":"Liverpool","country":"Colombia","flag":"CO","redha":"have","mat":"have","page":43},{"id":"COL-10","first":"Jhon","last":"ARIAS","club":"Fluminense","country":"Colombia","flag":"CO","redha":"have","mat":"have","page":43},{"id":"COL-11","first":"Luis","last":"SUAREZ","club":"Girondins Bordeaux","country":"Colombia","flag":"CO","redha":"have","mat":"have","page":43},{"id":"COD-B","first":"","last":"BADGE","club":"","country":"Congo DR","flag":"CD","redha":"have","mat":"have","page":41},{"id":"COD-1","first":"Lionel","last":"MPASI","club":"Standard Liege","country":"Congo DR","flag":"CD","redha":"double","mat":"have","page":41},{"id":"COD-2","first":"Gael","last":"WAN-BISSAKA","club":"West Ham","country":"Congo DR","flag":"CD","redha":"have","mat":"have","page":41},{"id":"COD-3","first":"Chancel","last":"MBEMBA","club":"LOSC Lille","country":"Congo DR","flag":"CD","redha":"have","mat":"have","page":41},{"id":"COD-4","first":"Ngilyel","last":"MUKAU","club":"LOSC Lille","country":"Congo DR","flag":"CD","redha":"have","mat":"have","page":41},{"id":"COD-5","first":"Daniel","last":"MOUTOUSSAMMY","club":"Strasbourg","country":"Congo DR","flag":"CD","redha":"have","mat":"have","page":41},{"id":"COD-6","first":"Noah","last":"SADIKI","club":"Anderlecht","country":"Congo DR","flag":"CD","redha":"have","mat":"have","page":41},{"id":"COD-7","first":"Theo","last":"BONGONDA","club":"Spartak Moskva","country":"Congo DR","flag":"CD","redha":"double","mat":"have","page":41},{"id":"COD-8","first":"Yoane","last":"WISSA","club":"Newcastle","country":"Congo DR","flag":"CD","redha":"have","mat":"missing","page":41},{"id":"COD-9","first":"Axel","last":"TUANZEBE","club":"Stoke City","country":"Congo DR","flag":"CD","redha":"have","mat":"have","page":41},{"id":"COD-10","first":"Arthur","last":"MASUAKU","club":"West Ham","country":"Congo DR","flag":"CD","redha":"have","mat":"missing","page":41},{"id":"COD-11","first":"Cedric","last":"BAKAMBU","club":"Real Betis","country":"Congo DR","flag":"CD","redha":"have","mat":"have","page":41},{"id":"CIV-B","first":"","last":"BADGE","club":"","country":"Cote d Ivoire","flag":"CI","redha":"have","mat":"have","page":18},{"id":"CIV-1","first":"Ghislain","last":"KONAN","club":"Reims","country":"Cote d Ivoire","flag":"CI","redha":"have","mat":"missing","page":18},{"id":"CIV-2","first":"Willy","last":"BOLY","club":"Nottingham Forest","country":"Cote d Ivoire","flag":"CI","redha":"have","mat":"have","page":18},{"id":"CIV-3","first":"Franck","last":"KESSIE","club":"Al Ahli","country":"Cote d Ivoire","flag":"CI","redha":"have","mat":"have","page":18},{"id":"CIV-4","first":"Evan","last":"NDICKA","club":"AS Roma","country":"Cote d Ivoire","flag":"CI","redha":"missing","mat":"double","page":18},{"id":"CIV-5","first":"Ibrahim","last":"SANGARE","club":"Nottingham Forest","country":"Cote d Ivoire","flag":"CI","redha":"have","mat":"double","page":18},{"id":"CIV-6","first":"Sebastien","last":"HALLER","club":"Stuttgart","country":"Cote d Ivoire","flag":"CI","redha":"double","mat":"missing","page":18},{"id":"CIV-7","first":"Seko","last":"FOFANA","club":"Al-Qadsiah","country":"Cote d Ivoire","flag":"CI","redha":"missing","mat":"have","page":18},{"id":"CIV-8","first":"Simon","last":"ADINGRA","club":"Brighton","country":"Cote d Ivoire","flag":"CI","redha":"have","mat":"have","page":18},{"id":"CIV-9","first":"Wilfried","last":"BINGO","club":"Galatasaray","country":"Cote d Ivoire","flag":"CI","redha":"have","mat":"have","page":18},{"id":"CIV-10","first":"Evan","last":"GUESSAND","club":"Aston Villa","country":"Cote d Ivoire","flag":"CI","redha":"have","mat":"have","page":18},{"id":"CRO-B","first":"","last":"BADGE","club":"","country":"Croatia","flag":"HR","redha":"have","mat":"missing","page":45},{"id":"CRO-1","first":"Dominik","last":"LIVAKOVIC","club":"Girona FC","country":"Croatia","flag":"HR","redha":"have","mat":"have","page":45},{"id":"CRO-2","first":"Duje","last":"CALETA-CAR","club":"Real Sociedad de Futbol","country":"Croatia","flag":"HR","redha":"have","mat":"double","page":45},{"id":"CRO-3","first":"Josko","last":"GVARDIOL","club":"Manchester City FC","country":"Croatia","flag":"HR","redha":"have","mat":"missing","page":45},{"id":"CUW-B","first":"","last":"BADGE","club":"","country":"Curazao","flag":"CW","redha":"have","mat":"have","page":17},{"id":"CUW-1","first":"Eloy","last":"ROOM","club":"Miami FC","country":"Curazao","flag":"CW","redha":"double","mat":"have","page":17},{"id":"CUW-2","first":"Armando","last":"OBISPO","club":"PSV Eindhoven","country":"Curazao","flag":"CW","redha":"double","mat":"have","page":17},{"id":"CUW-3","first":"Sherel","last":"FLORANUS","club":"PEC Zwolle","country":"Curazao","flag":"CW","redha":"have","mat":"double","page":17},{"id":"CZE-B","first":"","last":"BADGE","club":"","country":"Czechia","flag":"CZ","redha":"have","mat":"missing","page":3},{"id":"CZE-1","first":"Lukas","last":"PROVOD","club":"Slavia Praha","country":"Czechia","flag":"CZ","redha":"have","mat":"missing","page":3},{"id":"CZE-2","first":"Ladislav","last":"KREJCI","club":"Viktoria Plzen","country":"Czechia","flag":"CZ","redha":"missing","mat":"have","page":3},{"id":"CZE-3","first":"Vladimir","last":"COUFAL","club":"West Ham","country":"Czechia","flag":"CZ","redha":"missing","mat":"have","page":3},{"id":"CZE-4","first":"Jaroslav","last":"ZELENY","club":"Slavia Praha","country":"Czechia","flag":"CZ","redha":"missing","mat":"double","page":3},{"id":"CZE-5","first":"Lukas","last":"CERV","club":"Viktoria Plzen","country":"Czechia","flag":"CZ","redha":"have","mat":"have","page":3},{"id":"CZE-6","first":"Tomas","last":"SOUCEK","club":"West Ham","country":"Czechia","flag":"CZ","redha":"have","mat":"have","page":3},{"id":"CZE-7","first":"Vaclav","last":"CERVNY","club":"Wolverhampton","country":"Czechia","flag":"CZ","redha":"have","mat":"have","page":3},{"id":"CZE-8","first":"Pavel","last":"SULC","club":"Bayer Leverkusen","country":"Czechia","flag":"CZ","redha":"missing","mat":"have","page":3},{"id":"CZE-9","first":"Adam","last":"HLOZEK","club":"TSG Hoffenheim","country":"Czechia","flag":"CZ","redha":"have","mat":"missing","page":3},{"id":"CZE-10","first":"Patrik","last":"SCHICK","club":"Bayer Leverkusen","country":"Czechia","flag":"CZ","redha":"have","mat":"have","page":3},{"id":"ECU-B","first":"","last":"BADGE","club":"","country":"Ecuador","flag":"EC","redha":"have","mat":"missing","page":19},{"id":"ECU-1","first":"Hernan","last":"GALINDEZ","club":"Atletico Huracan","country":"Ecuador","flag":"EC","redha":"have","mat":"have","page":19},{"id":"ECU-2","first":"Piero","last":"HINCAPIE","club":"Arsenal FC","country":"Ecuador","flag":"EC","redha":"double","mat":"double","page":19},{"id":"ECU-3","first":"Angelo","last":"PRECIADO","club":"Al Qadsiah","country":"Ecuador","flag":"EC","redha":"have","mat":"have","page":19},{"id":"ECU-4","first":"Kendry","last":"PAEZ","club":"Chelsea","country":"Ecuador","flag":"EC","redha":"have","mat":"have","page":19},{"id":"ECU-5","first":"Moises","last":"CAICEDO","club":"Chelsea","country":"Ecuador","flag":"EC","redha":"have","mat":"have","page":19},{"id":"ECU-6","first":"Pervis","last":"ESTUPINIAN","club":"Brighton","country":"Ecuador","flag":"EC","redha":"have","mat":"double","page":19},{"id":"ECU-7","first":"Willian","last":"PACHO","club":"PSG","country":"Ecuador","flag":"EC","redha":"have","mat":"have","page":19},{"id":"ECU-8","first":"Alan","last":"FRANCO","club":"Talleres","country":"Ecuador","flag":"EC","redha":"missing","mat":"have","page":19},{"id":"ECU-9","first":"Pedro","last":"VITE","club":"Celta Vigo","country":"Ecuador","flag":"EC","redha":"have","mat":"double","page":19},{"id":"ECU-10","first":"Gonzalo","last":"PLATA","club":"Flamengo","country":"Ecuador","flag":"EC","redha":"have","mat":"have","page":19},{"id":"ECU-11","first":"Enner","last":"VALENCIA","club":"CF Pachuca","country":"Ecuador","flag":"EC","redha":"double","mat":"have","page":19},{"id":"EGY-B","first":"","last":"BADGE","club":"","country":"Egypt","flag":"EG","redha":"have","mat":"missing","page":25},{"id":"EGY-1","first":"Mahmoud","last":"ATTIA","club":"Al Ahly","country":"Egypt","flag":"EG","redha":"have","mat":"have","page":25},{"id":"EGY-2","first":"Mohamed","last":"HANY","club":"Al Ahly","country":"Egypt","flag":"EG","redha":"double","mat":"have","page":25},{"id":"EGY-3","first":"","last":"ZIZO","club":"Al Ahly","country":"Egypt","flag":"EG","redha":"have","mat":"missing","page":25},{"id":"EGY-4","first":"Ramy","last":"RABIA","club":"Pyramids FC","country":"Egypt","flag":"EG","redha":"missing","mat":"have","page":25},{"id":"EGY-5","first":"Hamdy","last":"FATHY","club":"Al Ahly","country":"Egypt","flag":"EG","redha":"have","mat":"have","page":25},{"id":"EGY-6","first":"Omar","last":"MARMOUSH","club":"Manchester City","country":"Egypt","flag":"EG","redha":"have","mat":"have","page":25},{"id":"EGY-7","first":"Mohamed","last":"SALAH","club":"Liverpool","country":"Egypt","flag":"EG","redha":"have","mat":"missing","page":25},{"id":"EGY-8","first":"Mostafa","last":"MOHAMED","club":"FC Nantes","country":"Egypt","flag":"EG","redha":"double","mat":"have","page":25},{"id":"EGY-9","first":"Hossam","last":"IBRAHIM","club":"Al Ahly","country":"Egypt","flag":"EG","redha":"have","mat":"have","page":25},{"id":"EGY-10","first":"","last":"TREZEGUET","club":"Kasimpasa","country":"Egypt","flag":"EG","redha":"have","mat":"have","page":25},{"id":"ENG-B","first":"","last":"BADGE","club":"","country":"England","flag":"EN","redha":"have","mat":"missing","page":44},{"id":"ENG-1","first":"Jordan","last":"PICKFORD","club":"Everton FC","country":"England","flag":"EN","redha":"have","mat":"have","page":44},{"id":"ENG-2","first":"Reece","last":"JAMES","club":"Chelsea FC","country":"England","flag":"EN","redha":"have","mat":"double","page":44},{"id":"ENG-3","first":"John","last":"STONES","club":"Manchester City FC","country":"England","flag":"EN","redha":"have","mat":"double","page":44},{"id":"ENG-4","first":"Jude","last":"BELLINGHAM","club":"Real Madrid CF","country":"England","flag":"EN","redha":"have","mat":"have","page":44},{"id":"ENG-5","first":"Declan","last":"RICE","club":"Arsenal FC","country":"England","flag":"EN","redha":"have","mat":"have","page":44},{"id":"ENG-6","first":"Jordan","last":"HENDERSON","club":"Brentford FC","country":"England","flag":"EN","redha":"have","mat":"have","page":44},{"id":"ENG-7","first":"Phil","last":"FODEN","club":"Manchester City FC","country":"England","flag":"EN","redha":"have","mat":"have","page":44},{"id":"ENG-8","first":"Harry","last":"KANE","club":"FC Bayern Munich","country":"England","flag":"EN","redha":"have","mat":"have","page":44},{"id":"ENG-9","first":"Bukayo","last":"SAKA","club":"Arsenal FC","country":"England","flag":"EN","redha":"have","mat":"missing","page":44},{"id":"ENG-10","first":"Cole","last":"PALMER","club":"Chelsea FC","country":"England","flag":"EN","redha":"have","mat":"have","page":44},{"id":"ENG-11","first":"Marcus","last":"RASHFORD","club":"FC Barcelona","country":"England","flag":"EN","redha":"have","mat":"have","page":44},{"id":"FRA-B","first":"","last":"BADGE","club":"","country":"France","flag":"FR","redha":"have","mat":"have","page":32},{"id":"FRA-1","first":"Mike","last":"MAIGNAN","club":"AC Milan","country":"France","flag":"FR","redha":"double","mat":"have","page":32},{"id":"FRA-2","first":"William","last":"SALIBA","club":"Arsenal FC","country":"France","flag":"FR","redha":"have","mat":"have","page":32},{"id":"FRA-3","first":"Jules","last":"KOUNDE","club":"FC Barcelona","country":"France","flag":"FR","redha":"have","mat":"have","page":32},{"id":"FRA-4","first":"Theo","last":"HERNANDEZ","club":"Al Hilal Saudi Club","country":"France","flag":"FR","redha":"have","mat":"have","page":32},{"id":"FRA-5","first":"Aurelien","last":"TCHOUAMENI","club":"Real Madrid CF","country":"France","flag":"FR","redha":"have","mat":"have","page":32},{"id":"FRA-6","first":"Eduardo","last":"CAMAVINGA","club":"Real Madrid CF","country":"France","flag":"FR","redha":"have","mat":"have","page":32},{"id":"FRA-7","first":"Ousmane","last":"DEMBELE","club":"Paris Saint-Germain","country":"France","flag":"FR","redha":"have","mat":"have","page":32},{"id":"FRA-8","first":"Kylian","last":"MBAPPE","club":"Real Madrid CF","country":"France","flag":"FR","redha":"have","mat":"missing","page":32},{"id":"FRA-9","first":"Bradley","last":"BARCOLA","club":"Paris Saint-Germain","country":"France","flag":"FR","redha":"have","mat":"have","page":32},{"id":"FRA-10","first":"Desire","last":"DOUE","club":"Paris Saint-Germain","country":"France","flag":"FR","redha":"have","mat":"have","page":32},{"id":"FRA-11","first":"Hugo","last":"EKITIKE","club":"Liverpool FC","country":"France","flag":"FR","redha":"have","mat":"have","page":32},{"id":"GER-B","first":"","last":"BADGE","club":"","country":"Germany","flag":"DE","redha":"have","mat":"have","page":16},{"id":"GER-1","first":"Marc-Andre","last":"TER STEGEN","club":"FC Barcelona","country":"Germany","flag":"DE","redha":"double","mat":"have","page":16},{"id":"GER-2","first":"Antonio","last":"RUDIGER","club":"Real Madrid CF","country":"Germany","flag":"DE","redha":"double","mat":"have","page":16},{"id":"GER-3","first":"Jonathan","last":"TAH","club":"FC Bayern Munich","country":"Germany","flag":"DE","redha":"have","mat":"missing","page":16},{"id":"GER-4","first":"David","last":"RAUM","club":"RB Leipzig","country":"Germany","flag":"DE","redha":"have","mat":"have","page":16},{"id":"GER-5","first":"Florian","last":"WIRTZ","club":"Liverpool FC","country":"Germany","flag":"DE","redha":"have","mat":"missing","page":16},{"id":"GER-6","first":"Joshua","last":"KIMMICH","club":"FC Bayern Munich","country":"Germany","flag":"DE","redha":"have","mat":"have","page":16},{"id":"GER-7","first":"Leon","last":"GORETZKA","club":"FC Bayern Munich","country":"Germany","flag":"DE","redha":"have","mat":"have","page":16},{"id":"GER-8","first":"Jamal","last":"MUSIALA","club":"FC Bayern Munich","country":"Germany","flag":"DE","redha":"have","mat":"missing","page":16},{"id":"GER-9","first":"Serge","last":"GNABRY","club":"FC Bayern Munich","country":"Germany","flag":"DE","redha":"have","mat":"have","page":16},{"id":"GER-10","first":"Kai","last":"HAVERTZ","club":"Arsenal FC","country":"Germany","flag":"DE","redha":"have","mat":"have","page":16},{"id":"GER-11","first":"Nick","last":"WOLTEMADE","club":"Newcastle United","country":"Germany","flag":"DE","redha":"have","mat":"have","page":16},{"id":"GHA-B","first":"","last":"BADGE","club":"","country":"Ghana","flag":"GH","redha":"double","mat":"have","page":46},{"id":"GHA-1","first":"Lawrence","last":"ATIZIGU","club":"Manchester City","country":"Ghana","flag":"GH","redha":"have","mat":"have","page":46},{"id":"GHA-2","first":"Alidu","last":"SEIDU","club":"Stade Rennais","country":"Ghana","flag":"GH","redha":"have","mat":"have","page":46},{"id":"GHA-3","first":"Alexander","last":"DJIKU","club":"Spartak Moskva","country":"Ghana","flag":"GH","redha":"double","mat":"missing","page":46},{"id":"GHA-4","first":"Odin","last":"FRIMPONG","club":"Bayer Leverkusen","country":"Ghana","flag":"GH","redha":"have","mat":"have","page":46},{"id":"GHA-5","first":"Caleb","last":"VIRENKVI","club":"Vitesse","country":"Ghana","flag":"GH","redha":"missing","mat":"have","page":46},{"id":"GHA-6","first":"Thomas","last":"PARTEY","club":"Arsenal","country":"Ghana","flag":"GH","redha":"have","mat":"have","page":46},{"id":"GHA-7","first":"Abdul","last":"FATAWU","club":"Leicester City","country":"Ghana","flag":"GH","redha":"have","mat":"missing","page":46},{"id":"GHA-8","first":"Mohammed","last":"KUDUS","club":"West Ham","country":"Ghana","flag":"GH","redha":"missing","mat":"have","page":46},{"id":"GHA-9","first":"Kamalzein","last":"SULEMANA","club":"Rennes","country":"Ghana","flag":"GH","redha":"have","mat":"have","page":46},{"id":"GHA-10","first":"Jordan","last":"AYEW","club":"Leicester City","country":"Ghana","flag":"GH","redha":"have","mat":"have","page":46},{"id":"GHA-11","first":"Antoine","last":"SEMENVO","club":"FC Nantes","country":"Ghana","flag":"GH","redha":"double","mat":"have","page":46},{"id":"HAI-B","first":"","last":"BADGE","club":"","country":"Haiti","flag":"HT","redha":"have","mat":"have","page":10},{"id":"HAI-1","first":"Leverton","last":"PIERRE","club":"Philadelphia Union","country":"Haiti","flag":"HT","redha":"have","mat":"have","page":10},{"id":"HAI-2","first":"Shelly","last":"JEAN-JACQUES","club":"Philadelphia Union","country":"Haiti","flag":"HT","redha":"have","mat":"have","page":10},{"id":"HAI-3","first":"Ricardo","last":"ADE","club":"Dijon","country":"Haiti","flag":"HT","redha":"missing","mat":"missing","page":10},{"id":"HAI-4","first":"Johny","last":"PLACIDE","club":"Al-Batin FC","country":"Haiti","flag":"HT","redha":"have","mat":"have","page":10},{"id":"HAI-5","first":"Carlens","last":"ARCUS","club":"Angers SCO","country":"Haiti","flag":"HT","redha":"double","mat":"have","page":10},{"id":"HAI-6","first":"Dukens","last":"NAZON","club":"Esteghlal FC","country":"Haiti","flag":"HT","redha":"have","mat":"have","page":10},{"id":"HAI-7","first":"Jean-Ricner","last":"BELLEGARDE","club":"Strasbourg","country":"Haiti","flag":"HT","redha":"missing","mat":"have","page":10},{"id":"HAI-8","first":"Jose","last":"CASIMIR","club":"Al Wasl","country":"Haiti","flag":"HT","redha":"have","mat":"double","page":10},{"id":"HAI-9","first":"Ruben","last":"PROVIDENCE","club":"Dijon","country":"Haiti","flag":"HT","redha":"missing","mat":"missing","page":10},{"id":"HAI-10","first":"Fantzen","last":"PIERROT","club":"San Jose Earthquakes","country":"Haiti","flag":"HT","redha":"have","mat":"have","page":10},{"id":"HAI-11","first":"Dail","last":"LAGROIX","club":"Clermont Foot","country":"Haiti","flag":"HT","redha":"have","mat":"have","page":10},{"id":"IRN-B","first":"","last":"BADGE","club":"","country":"Iran","flag":"IR","redha":"double","mat":"have","page":26},{"id":"IRN-1","first":"Alireza","last":"BEIRANVAND","club":"Persepolis","country":"Iran","flag":"IR","redha":"have","mat":"double","page":26},{"id":"IRN-2","first":"Shojae","last":"KHALILZADEH","club":"Shartor FC","country":"Iran","flag":"IR","redha":"have","mat":"have","page":26},{"id":"IRN-3","first":"Hossein","last":"KANAANI","club":"Persepolis","country":"Iran","flag":"IR","redha":"have","mat":"have","page":26},{"id":"IRN-4","first":"Saeed","last":"EZATOLAHI","club":"Shabab Al-Ahli","country":"Iran","flag":"IR","redha":"double","mat":"have","page":26},{"id":"IRN-5","first":"Saman","last":"GHODDOS","club":"Kalba FC","country":"Iran","flag":"IR","redha":"double","mat":"have","page":26},{"id":"IRN-6","first":"Mohammad","last":"MOHESI","club":"Esteghlal","country":"Iran","flag":"IR","redha":"have","mat":"have","page":26},{"id":"IRN-7","first":"Milad","last":"MOHAMMADI","club":"Gent","country":"Iran","flag":"IR","redha":"have","mat":"have","page":26},{"id":"IRN-8","first":"Amir","last":"REZAZADEH","club":"Esteghlal FC","country":"Iran","flag":"IR","redha":"have","mat":"have","page":26},{"id":"IRN-9","first":"Mehdi","last":"TAREMI","club":"Inter Milan","country":"Iran","flag":"IR","redha":"missing","mat":"have","page":26},{"id":"IRN-10","first":"Sardar","last":"AZMOUN","club":"Roma","country":"Iran","flag":"IR","redha":"have","mat":"have","page":26},{"id":"IRN-11","first":"Alireza","last":"JAHANBAKHSH","club":"Feyenoord","country":"Iran","flag":"IR","redha":"have","mat":"missing","page":26},{"id":"IRQ-B","first":"","last":"BADGE","club":"","country":"Iraq","flag":"IQ","redha":"have","mat":"have","page":34},{"id":"IRQ-1","first":"Jalal","last":"HASSAN","club":"Air Force Club","country":"Iraq","flag":"IQ","redha":"missing","mat":"missing","page":34},{"id":"IRQ-2","first":"Hussein","last":"ALI","club":"Al-Zawraa","country":"Iraq","flag":"IQ","redha":"missing","mat":"missing","page":34},{"id":"IRQ-3","first":"Jao","last":"TAHSEEN","club":"Karbala FC","country":"Iraq","flag":"IQ","redha":"have","mat":"have","page":34},{"id":"IRQ-4","first":"Aimar","last":"SHER","club":"Sarpsborg 08 FF","country":"Iraq","flag":"IQ","redha":"have","mat":"have","page":34},{"id":"IRQ-5","first":"Zeyad","last":"IQBAL","club":"FC Nordsjaelland","country":"Iraq","flag":"IQ","redha":"have","mat":"have","page":34},{"id":"IRQ-6","first":"Amir","last":"AL-AMMARI","club":"KS Cracovia","country":"Iraq","flag":"IQ","redha":"double","mat":"have","page":34},{"id":"IRQ-7","first":"Rasha","last":"BAYESH","club":"Al Shamal FC","country":"Iraq","flag":"IQ","redha":"have","mat":"have","page":34},{"id":"IRQ-8","first":"Ali","last":"JASIM","club":"Al Wakrah SC","country":"Iraq","flag":"IQ","redha":"have","mat":"missing","page":34},{"id":"IRQ-9","first":"Amjad","last":"GHER","club":"Damac FC","country":"Iraq","flag":"IQ","redha":"have","mat":"have","page":34},{"id":"IRQ-10","first":"Saad","last":"HASHEM","club":"Al Zawraa FC","country":"Iraq","flag":"IQ","redha":"have","mat":"missing","page":34},{"id":"IRQ-11","first":"Mohanad","last":"ALI","club":"Al-Zawraa","country":"Iraq","flag":"IQ","redha":"missing","mat":"have","page":34},{"id":"JPN-B","first":"","last":"BADGE","club":"","country":"Japan","flag":"JP","redha":"have","mat":"have","page":21},{"id":"JPN-1","first":"Zion","last":"SUZUKI","club":"Parma FC","country":"Japan","flag":"JP","redha":"have","mat":"double","page":21},{"id":"JPN-2","first":"Tsuyoshi","last":"WATANABE","club":"Feyenoord","country":"Japan","flag":"JP","redha":"have","mat":"double","page":21},{"id":"JPN-3","first":"Kaishu","last":"SANO","club":"1.FSV Mainz 05","country":"Japan","flag":"JP","redha":"have","mat":"have","page":21},{"id":"JPN-4","first":"Ao","last":"TANAKA","club":"Leeds United","country":"Japan","flag":"JP","redha":"have","mat":"missing","page":21},{"id":"JPN-5","first":"Daichi","last":"KAMADA","club":"Crystal Palace FC","country":"Japan","flag":"JP","redha":"have","mat":"have","page":21},{"id":"JPN-6","first":"Ritsu","last":"DOAN","club":"Eintracht Frankfurt","country":"Japan","flag":"JP","redha":"have","mat":"have","page":21},{"id":"JPN-7","first":"Keito","last":"NAKAMURA","club":"Stade de Reims","country":"Japan","flag":"JP","redha":"have","mat":"have","page":21},{"id":"JPN-8","first":"Takumi","last":"MINAMINO","club":"AS Monaco","country":"Japan","flag":"JP","redha":"have","mat":"have","page":21},{"id":"JPN-9","first":"Takefusa","last":"KUBO","club":"Real Sociedad de Futbol","country":"Japan","flag":"JP","redha":"have","mat":"have","page":21},{"id":"JPN-10","first":"Shuto","last":"MACHINO","club":"Borussia Monchengladbach","country":"Japan","flag":"JP","redha":"have","mat":"missing","page":21},{"id":"JPN-11","first":"Ayase","last":"UEDA","club":"Feyenoord","country":"Japan","flag":"JP","redha":"have","mat":"have","page":21},{"id":"JOR-B","first":"","last":"BADGE","club":"","country":"Jordan","flag":"JO","redha":"have","mat":"have","page":39},{"id":"JOR-1","first":"Yazeed","last":"ABULAILA","club":"Al-Hussein SC","country":"Jordan","flag":"JO","redha":"have","mat":"double","page":39},{"id":"JOR-2","first":"Mohammad","last":"ABU HASHISH","club":"Al-Ahli","country":"Jordan","flag":"JO","redha":"missing","mat":"have","page":39},{"id":"JOR-3","first":"Yazan","last":"AL-ARAB","club":"Al-Ahli","country":"Jordan","flag":"JO","redha":"missing","mat":"have","page":39},{"id":"JOR-4","first":"Noor","last":"AL-RAWABDEH","club":"Selangor FC","country":"Jordan","flag":"JO","redha":"double","mat":"have","page":39},{"id":"JOR-5","first":"Noor","last":"AL-RASHDAN","club":"Al Aqaba SC","country":"Jordan","flag":"JO","redha":"have","mat":"have","page":39},{"id":"JOR-6","first":"Kgor","last":"AL-RASHDAN","club":"Al Ahli SC","country":"Jordan","flag":"JO","redha":"have","mat":"have","page":39},{"id":"JOR-7","first":"Yazan","last":"AL-NAIMAT","club":"Al Ahli FC","country":"Jordan","flag":"JO","redha":"have","mat":"have","page":39},{"id":"JOR-8","first":"Mossa","last":"AL-TAMARI","club":"Stade Rennais","country":"Jordan","flag":"JO","redha":"have","mat":"have","page":39},{"id":"JOR-9","first":"Abdallah","last":"NASIB","club":"Al Ahli SC","country":"Jordan","flag":"JO","redha":"have","mat":"have","page":39},{"id":"JOR-10","first":"Mahmoud","last":"AL-MARDI","club":"Al-Ahli","country":"Jordan","flag":"JO","redha":"missing","mat":"have","page":39},{"id":"JOR-11","first":"Ali","last":"OLWAN","club":"Al-Karma SC","country":"Jordan","flag":"JO","redha":"have","mat":"double","page":39},{"id":"MEX-B","first":"","last":"BADGE","club":"","country":"Mexico","flag":"MX","redha":"have","mat":"have","page":0},{"id":"MEX-1","first":"Luis","last":"MALAGON","club":"Club America","country":"Mexico","flag":"MX","redha":"have","mat":"have","page":0},{"id":"MEX-2","first":"Johan","last":"VASQUEZ","club":"Genoa CFC","country":"Mexico","flag":"MX","redha":"missing","mat":"have","page":0},{"id":"MEX-3","first":"Cesar","last":"MONTES","club":"Almeria","country":"Mexico","flag":"MX","redha":"missing","mat":"have","page":0},{"id":"MEX-4","first":"Israel","last":"REYES","club":"Stade Brestois","country":"Mexico","flag":"MX","redha":"have","mat":"have","page":0},{"id":"MEX-5","first":"Edson","last":"ALVAREZ","club":"West Ham","country":"Mexico","flag":"MX","redha":"have","mat":"have","page":0},{"id":"MEX-6","first":"Marcel","last":"RUIZ","club":"Deportivo Toluca","country":"Mexico","flag":"MX","redha":"have","mat":"have","page":0},{"id":"MEX-7","first":"Hirving","last":"LOZANO","club":"PSV","country":"Mexico","flag":"MX","redha":"have","mat":"have","page":0},{"id":"MEX-8","first":"Jesus","last":"GALLARDO","club":"Monterrey","country":"Mexico","flag":"MX","redha":"have","mat":"have","page":0},{"id":"MEX-9","first":"Raul","last":"JIMENEZ","club":"Fulham","country":"Mexico","flag":"MX","redha":"missing","mat":"double","page":0},{"id":"MEX-10","first":"Alexis","last":"VEGA","club":"Club Toluca","country":"Mexico","flag":"MX","redha":"missing","mat":"double","page":0},{"id":"MEX-11","first":"Roberto","last":"ALVARADO","club":"Guadalajara","country":"Mexico","flag":"MX","redha":"missing","mat":"have","page":0},{"id":"MAR-B","first":"","last":"BADGE","club":"","country":"Morocco","flag":"MA","redha":"have","mat":"have","page":9},{"id":"MAR-1","first":"Yassine","last":"BOUNOU","club":"Al Hilal","country":"Morocco","flag":"MA","redha":"double","mat":"have","page":9},{"id":"MAR-2","first":"Achraf","last":"HAKIMI","club":"PSG","country":"Morocco","flag":"MA","redha":"have","mat":"double","page":9},{"id":"MAR-3","first":"Romain","last":"SAISS","club":"Al-Kholood","country":"Morocco","flag":"MA","redha":"have","mat":"have","page":9},{"id":"MAR-4","first":"Noussair","last":"MAZRAOUI","club":"Manchester United","country":"Morocco","flag":"MA","redha":"have","mat":"have","page":9},{"id":"MAR-5","first":"Nayef","last":"AGUERD","club":"Rennes","country":"Morocco","flag":"MA","redha":"have","mat":"have","page":9},{"id":"MAR-6","first":"Sofyan","last":"AMRABAT","club":"Fiorentina","country":"Morocco","flag":"MA","redha":"missing","mat":"have","page":9},{"id":"MAR-7","first":"Bilal","last":"EL KHANNOUSS","club":"Genk","country":"Morocco","flag":"MA","redha":"have","mat":"missing","page":9},{"id":"MAR-8","first":"Imad","last":"SAIBARI","club":"PSV","country":"Morocco","flag":"MA","redha":"have","mat":"have","page":9},{"id":"MAR-9","first":"Elias","last":"BEN SEGHIR","club":"Monaco","country":"Morocco","flag":"MA","redha":"have","mat":"have","page":9},{"id":"MAR-10","first":"Youssef","last":"EN-NESYRI","club":"Fenerbahce","country":"Morocco","flag":"MA","redha":"missing","mat":"have","page":9},{"id":"MAR-11","first":"Brahim","last":"DIAZ","club":"Real Madrid","country":"Morocco","flag":"MA","redha":"missing","mat":"have","page":9},{"id":"NED-B","first":"","last":"BADGE","club":"","country":"Netherlands","flag":"NL","redha":"have","mat":"have","page":20},{"id":"NED-1","first":"Bart","last":"VERBRUGGEN","club":"Brighton & Hove Albion","country":"Netherlands","flag":"NL","redha":"have","mat":"have","page":20},{"id":"NED-2","first":"Virgil","last":"VAN DIJK","club":"Liverpool FC","country":"Netherlands","flag":"NL","redha":"have","mat":"have","page":20},{"id":"NED-3","first":"Micky","last":"VAN DE VEN","club":"Tottenham Hotspur","country":"Netherlands","flag":"NL","redha":"have","mat":"have","page":20},{"id":"NED-4","first":"Denzel","last":"DUMFRIES","club":"FC Internazionale Milano","country":"Netherlands","flag":"NL","redha":"have","mat":"have","page":20},{"id":"NED-5","first":"Tijjani","last":"REIJNDERS","club":"Manchester City FC","country":"Netherlands","flag":"NL","redha":"have","mat":"have","page":20},{"id":"NED-6","first":"Ryan","last":"GRAVENBERCH","club":"Liverpool FC","country":"Netherlands","flag":"NL","redha":"have","mat":"have","page":20},{"id":"NED-7","first":"Frenkie","last":"DE JONG","club":"FC Barcelona","country":"Netherlands","flag":"NL","redha":"have","mat":"have","page":20},{"id":"NED-8","first":"Xavi","last":"SIMONS","club":"Tottenham Hotspur","country":"Netherlands","flag":"NL","redha":"have","mat":"have","page":20},{"id":"NED-9","first":"Memphis","last":"DEPAY","club":"Sport Club Corinthians Paulista","country":"Netherlands","flag":"NL","redha":"have","mat":"missing","page":20},{"id":"NED-10","first":"Donyell","last":"MALEN","club":"Aston Villa FC","country":"Netherlands","flag":"NL","redha":"have","mat":"have","page":20},{"id":"NED-11","first":"Cody","last":"GAKPO","club":"Liverpool FC","country":"Netherlands","flag":"NL","redha":"have","mat":"double","page":20},{"id":"NZL-B","first":"","last":"BADGE","club":"","country":"New Zealand","flag":"NZ","redha":"have","mat":"have","page":27},{"id":"NZL-1","first":"Niko","last":"GROCOMBE","club":"Portland Timbers","country":"New Zealand","flag":"NZ","redha":"have","mat":"have","page":27},{"id":"NZL-2","first":"Michael","last":"BOXALL","club":"Minnesota United","country":"New Zealand","flag":"NZ","redha":"have","mat":"have","page":27},{"id":"NZL-3","first":"Finn","last":"SURMAN","club":"Portland Timbers","country":"New Zealand","flag":"NZ","redha":"have","mat":"double","page":27},{"id":"NZL-4","first":"Joe","last":"BELL","club":"Charlotte FC","country":"New Zealand","flag":"NZ","redha":"have","mat":"have","page":27},{"id":"NZL-5","first":"Liberato","last":"CACACE","club":"Southampton","country":"New Zealand","flag":"NZ","redha":"have","mat":"have","page":27},{"id":"NZL-6","first":"Marko","last":"STAMENIC","club":"Basel","country":"New Zealand","flag":"NZ","redha":"missing","mat":"have","page":27},{"id":"NZL-7","first":"Tim","last":"PAYNE","club":"Wellington Phoenix","country":"New Zealand","flag":"NZ","redha":"double","mat":"have","page":27},{"id":"NZL-8","first":"Sarpreet","last":"SINGH","club":"FC Tucson","country":"New Zealand","flag":"NZ","redha":"have","mat":"have","page":27},{"id":"NZL-9","first":"Matthew","last":"GARBETT","club":"Portland Timbers","country":"New Zealand","flag":"NZ","redha":"have","mat":"missing","page":27},{"id":"NZL-10","first":"Chris","last":"WOOD","club":"Nottingham Forest","country":"New Zealand","flag":"NZ","redha":"missing","mat":"missing","page":27},{"id":"NZL-11","first":"Elijah","last":"JUST","club":"Nottingham Forest","country":"New Zealand","flag":"NZ","redha":"have","mat":"have","page":27},{"id":"NOR-B","first":"","last":"BADGE","club":"","country":"Norway","flag":"NO","redha":"have","mat":"have","page":35},{"id":"NOR-1","first":"Julian","last":"RYERSON","club":"Borussia Dortmund","country":"Norway","flag":"NO","redha":"have","mat":"have","page":35},{"id":"NOR-2","first":"Martin","last":"ODEGAARD","club":"Arsenal","country":"Norway","flag":"NO","redha":"have","mat":"have","page":35},{"id":"NOR-3","first":"Sander","last":"BERGE","club":"Fulham","country":"Norway","flag":"NO","redha":"have","mat":"have","page":35},{"id":"NOR-4","first":"Erling","last":"HAALAND","club":"Manchester City","country":"Norway","flag":"NO","redha":"have","mat":"have","page":35},{"id":"NOR-5","first":"Antonio","last":"NUSA","club":"Bologna","country":"Norway","flag":"NO","redha":"have","mat":"have","page":35},{"id":"NOR-6","first":"Patrick","last":"BERG","club":"Lecce","country":"Norway","flag":"NO","redha":"double","mat":"have","page":35},{"id":"NOR-7","first":"Oscar","last":"BOBB","club":"Manchester City","country":"Norway","flag":"NO","redha":"have","mat":"have","page":35},{"id":"NOR-8","first":"Kristoffer","last":"AJER","club":"Brentford","country":"Norway","flag":"NO","redha":"have","mat":"have","page":35},{"id":"NOR-9","first":"Ola","last":"MOLLER WOLFE","club":"Wolverhampton","country":"Norway","flag":"NO","redha":"have","mat":"have","page":35},{"id":"NOR-10","first":"Alexander","last":"SORLOTH","club":"Atletico Madrid","country":"Norway","flag":"NO","redha":"have","mat":"have","page":35},{"id":"PAN-B","first":"","last":"BADGE","club":"","country":"Panama","flag":"PA","redha":"have","mat":"missing","page":47},{"id":"PAN-1","first":"Orlando","last":"MOSQUERA","club":"Dijon FCO","country":"Panama","flag":"PA","redha":"missing","mat":"have","page":47},{"id":"PAN-2","first":"Michael","last":"AMIR MURILLO","club":"Anderlecht","country":"Panama","flag":"PA","redha":"have","mat":"have","page":47},{"id":"PAN-3","first":"Andres","last":"ANDRADE","club":"Estudiantes","country":"Panama","flag":"PA","redha":"missing","mat":"have","page":47},{"id":"PAN-4","first":"Fidel","last":"ESCOBAR","club":"San Jose Earthquakes","country":"Panama","flag":"PA","redha":"have","mat":"have","page":47},{"id":"PAN-5","first":"Anibal","last":"GODOY","club":"San Jose Earthquakes","country":"Panama","flag":"PA","redha":"have","mat":"have","page":47},{"id":"PAN-6","first":"Cristian","last":"MARTINEZ","club":"Panama","country":"Panama","flag":"PA","redha":"missing","mat":"have","page":47},{"id":"PAN-7","first":"Edgar","last":"BARCENAS","club":"Almeria","country":"Panama","flag":"PA","redha":"have","mat":"have","page":47},{"id":"PAN-8","first":"Jose","last":"FAJARDO","club":"Columbus Crew","country":"Panama","flag":"PA","redha":"have","mat":"double","page":47},{"id":"PAN-9","first":"Adalberto","last":"CARRASQUILLA","club":"Panama","country":"Panama","flag":"PA","redha":"have","mat":"have","page":47},{"id":"PAN-10","first":"Ismael","last":"DIAZ","club":"Espanyol","country":"Panama","flag":"PA","redha":"missing","mat":"have","page":47},{"id":"PAN-11","first":"Jose Luis","last":"RODRIGUEZ","club":"FC Juarez","country":"Panama","flag":"PA","redha":"have","mat":"double","page":47},{"id":"PAR-B","first":"","last":"BADGE","club":"","country":"Paraguay","flag":"PY","redha":"have","mat":"have","page":13},{"id":"PAR-1","first":"Junior","last":"ALONSO","club":"Athletico-PR","country":"Paraguay","flag":"PY","redha":"have","mat":"have","page":13},{"id":"PAR-2","first":"Diego","last":"GOMEZ","club":"Brighton","country":"Paraguay","flag":"PY","redha":"have","mat":"have","page":13},{"id":"PAR-3","first":"Andres","last":"CUBAS","club":"Marseille","country":"Paraguay","flag":"PY","redha":"have","mat":"missing","page":13},{"id":"PAR-4","first":"Gustavo","last":"GOMEZ","club":"Palmeiras","country":"Paraguay","flag":"PY","redha":"have","mat":"have","page":13},{"id":"PAR-5","first":"Juan Jose","last":"CACERES","club":"Fluminense","country":"Paraguay","flag":"PY","redha":"have","mat":"have","page":13},{"id":"PAR-6","first":"Omar","last":"ALDERETE","club":"Valencia CF","country":"Paraguay","flag":"PY","redha":"have","mat":"have","page":13},{"id":"PAR-7","first":"Miguel","last":"ALMIRON","club":"Atlanta United","country":"Paraguay","flag":"PY","redha":"have","mat":"have","page":13},{"id":"PAR-8","first":"Julio","last":"ENCISO","club":"Brighton","country":"Paraguay","flag":"PY","redha":"missing","mat":"have","page":13},{"id":"PAR-9","first":"Martin","last":"SOSA","club":"Palmeiras","country":"Paraguay","flag":"PY","redha":"have","mat":"missing","page":13},{"id":"PAR-10","first":"Antonio","last":"SANABRIA","club":"Torino","country":"Paraguay","flag":"PY","redha":"have","mat":"have","page":13},{"id":"POR-B","first":"","last":"BADGE","club":"","country":"Portugal","flag":"PT","redha":"missing","mat":"have","page":40},{"id":"POR-1","first":"Diogo","last":"COSTA","club":"FC Porto","country":"Portugal","flag":"PT","redha":"have","mat":"have","page":40},{"id":"POR-2","first":"Ruben","last":"DIAS","club":"Manchester City","country":"Portugal","flag":"PT","redha":"missing","mat":"missing","page":40},{"id":"POR-3","first":"Nuno","last":"MENDES","club":"PSG","country":"Portugal","flag":"PT","redha":"have","mat":"missing","page":40},{"id":"POR-4","first":"","last":"VITINHA","club":"PSG","country":"Portugal","flag":"PT","redha":"have","mat":"have","page":40},{"id":"POR-5","first":"Bernardo","last":"SILVA","club":"Manchester City","country":"Portugal","flag":"PT","redha":"missing","mat":"missing","page":40},{"id":"POR-6","first":"Bruno","last":"FERNANDES","club":"Manchester Utd","country":"Portugal","flag":"PT","redha":"have","mat":"have","page":40},{"id":"POR-7","first":"Ruben","last":"NEVES","club":"Al-Hilal","country":"Portugal","flag":"PT","redha":"missing","mat":"have","page":40},{"id":"POR-8","first":"Cristiano","last":"RONALDO","club":"Al-Nassr","country":"Portugal","flag":"PT","redha":"have","mat":"have","page":40},{"id":"POR-9","first":"Joao","last":"FELIX","club":"Chelsea","country":"Portugal","flag":"PT","redha":"have","mat":"have","page":40},{"id":"POR-10","first":"Pedro","last":"NETO","club":"Chelsea","country":"Portugal","flag":"PT","redha":"missing","mat":"missing","page":40},{"id":"POR-11","first":"Rafael","last":"LEAO","club":"AC Milan","country":"Portugal","flag":"PT","redha":"have","mat":"missing","page":40},{"id":"QAT-B","first":"","last":"BADGE","club":"","country":"Qatar","flag":"QA","redha":"have","mat":"have","page":6},{"id":"QAT-1","first":"Meshaal","last":"BARSHAM","club":"Al-Arabi SC","country":"Qatar","flag":"QA","redha":"have","mat":"missing","page":6},{"id":"QAT-2","first":"Sultan","last":"ALBRAKE","club":"Al-Sadd SC","country":"Qatar","flag":"QA","redha":"have","mat":"have","page":6},{"id":"QAT-3","first":"Mohamed","last":"MANNAI","club":"Al-Duhail SC","country":"Qatar","flag":"QA","redha":"have","mat":"have","page":6},{"id":"QAT-4","first":"Pedro","last":"MIGUEL","club":"Al-Duhail SC","country":"Qatar","flag":"QA","redha":"missing","mat":"have","page":6},{"id":"QAT-5","first":"Karim","last":"BOUDIAF","club":"Al-Duhail SC","country":"Qatar","flag":"QA","redha":"have","mat":"have","page":6},{"id":"QAT-6","first":"Ahmed","last":"AL-GANEHI","club":"Al-Gharafa SC","country":"Qatar","flag":"QA","redha":"double","mat":"have","page":6},{"id":"QAT-7","first":"Assim","last":"MADIBO","club":"FC Dallas","country":"Qatar","flag":"QA","redha":"missing","mat":"have","page":6},{"id":"QAT-8","first":"Edmilson","last":"JUNIOR","club":"Al-Gharafa SC","country":"Qatar","flag":"QA","redha":"have","mat":"have","page":6},{"id":"QAT-9","first":"Muttar Hassan","last":"AFIF","club":"Al-Sadd SC","country":"Qatar","flag":"QA","redha":"have","mat":"missing","page":6},{"id":"QAT-10","first":"Ibrahim","last":"KHALFAN","club":"Al-Gharafa SC","country":"Qatar","flag":"QA","redha":"have","mat":"have","page":6},{"id":"QAT-11","first":"Almoez","last":"ALI","club":"Al-Duhail SC","country":"Qatar","flag":"QA","redha":"have","mat":"double","page":6},{"id":"KSA-B","first":"","last":"BADGE","club":"","country":"Saudi Arabia","flag":"SA","redha":"have","mat":"missing","page":30},{"id":"KSA-1","first":"Nawaf","last":"ALAQIDI","club":"Al-Hilal","country":"Saudi Arabia","flag":"SA","redha":"double","mat":"missing","page":30},{"id":"KSA-2","first":"Hassan","last":"ALTAMBAKTI","club":"Al-Ittihad","country":"Saudi Arabia","flag":"SA","redha":"missing","mat":"have","page":30},{"id":"KSA-3","first":"Nasser","last":"ALDAWSARI","club":"Al-Hilal","country":"Saudi Arabia","flag":"SA","redha":"have","mat":"have","page":30},{"id":"KSA-4","first":"Abdullah","last":"ALKHARSANI","club":"Al-Hilal","country":"Saudi Arabia","flag":"SA","redha":"have","mat":"have","page":30},{"id":"KSA-5","first":"Hisham","last":"ALSULAYMAN","club":"Al-Qadsiah","country":"Saudi Arabia","flag":"SA","redha":"have","mat":"have","page":30},{"id":"KSA-6","first":"Ismail","last":"ALBRIKAN","club":"Al-Hilal","country":"Saudi Arabia","flag":"SA","redha":"have","mat":"have","page":30},{"id":"KSA-7","first":"Salim","last":"ALDAWSARI","club":"Al-Hilal","country":"Saudi Arabia","flag":"SA","redha":"have","mat":"have","page":30},{"id":"KSA-8","first":"Feras","last":"ALBRIKAN","club":"Al-Ahli Saudi","country":"Saudi Arabia","flag":"SA","redha":"double","mat":"have","page":30},{"id":"KSA-9","first":"Saad","last":"ABDULHAMID","club":"AS Roma","country":"Saudi Arabia","flag":"SA","redha":"have","mat":"have","page":30},{"id":"KSA-10","first":"Saleh","last":"ABU ALSHAMAT","club":"Al-Hilal","country":"Saudi Arabia","flag":"SA","redha":"missing","mat":"have","page":30},{"id":"KSA-11","first":"Saleh","last":"ALSHEHRI","club":"Al-Ittihad","country":"Saudi Arabia","flag":"SA","redha":"have","mat":"have","page":30},{"id":"SCO-B","first":"","last":"BADGE","club":"","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SCO-1","first":"Angus","last":"GUNN","club":"Nottingham Forest","country":"Scotland","flag":"SC","redha":"double","mat":"have","page":11},{"id":"SCO-2","first":"Aaron","last":"HICKEY","club":"Brentford","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SCO-3","first":"Andrew","last":"ROBERTSON","club":"Liverpool FC","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SCO-4","first":"John","last":"SOUTTAR","club":"Rangers FC","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SCO-5","first":"Grant","last":"HANLEY","club":"Hibernian FC","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SCO-6","first":"Scott","last":"MCTOMINAY","club":"SSC Napoli","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SCO-7","first":"Lewis","last":"FERGUSON","club":"Bologna FC 1909","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SCO-8","first":"Ryan","last":"CHRISTIE","club":"AFC Bournemouth","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SCO-9","first":"John","last":"MCGINN","club":"Aston Villa FC","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SCO-10","first":"Che","last":"ADAMS","club":"Torino FC","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SCO-11","first":"Ben","last":"GANNON-DOAK","club":"AFC Bournemouth","country":"Scotland","flag":"SC","redha":"have","mat":"have","page":11},{"id":"SEN-B","first":"","last":"BADGE","club":"","country":"Senegal","flag":"SN","redha":"double","mat":"have","page":33},{"id":"SEN-1","first":"Edouard","last":"MENDY","club":"Al Ahli","country":"Senegal","flag":"SN","redha":"have","mat":"double","page":33},{"id":"SEN-2","first":"Kalidou","last":"KOULIBALY","club":"Al Hilal","country":"Senegal","flag":"SN","redha":"have","mat":"missing","page":33},{"id":"SEN-3","first":"Moussa","last":"NIAKHATE","club":"Nottingham Forest","country":"Senegal","flag":"SN","redha":"missing","mat":"have","page":33},{"id":"SEN-4","first":"El Hadji Malick","last":"DIOUF","club":"Stade de Reims","country":"Senegal","flag":"SN","redha":"have","mat":"have","page":33},{"id":"SEN-5","first":"Idrissa Gana","last":"GUEYE","club":"Everton","country":"Senegal","flag":"SN","redha":"missing","mat":"have","page":33},{"id":"SEN-6","first":"Pape Matar","last":"SARR","club":"Tottenham","country":"Senegal","flag":"SN","redha":"missing","mat":"have","page":33},{"id":"SEN-7","first":"Sadio","last":"MANE","club":"Al-Nassr","country":"Senegal","flag":"SN","redha":"have","mat":"missing","page":33},{"id":"SEN-8","first":"Lamin","last":"NDAYE","club":"Everton","country":"Senegal","flag":"SN","redha":"have","mat":"have","page":33},{"id":"SEN-9","first":"Krepin","last":"DIATTA","club":"Monaco","country":"Senegal","flag":"SN","redha":"have","mat":"have","page":33},{"id":"SEN-10","first":"Ismaila","last":"SARR","club":"Crystal Palace","country":"Senegal","flag":"SN","redha":"have","mat":"have","page":33},{"id":"SEN-11","first":"Nicolas","last":"JACKSON","club":"Chelsea","country":"Senegal","flag":"SN","redha":"have","mat":"have","page":33},{"id":"RSA-B","first":"","last":"BADGE","club":"","country":"South Africa","flag":"ZA","redha":"have","mat":"have","page":1},{"id":"RSA-1","first":"Ronwen","last":"WILLIAMS","club":"Mamelodi Sundowns","country":"South Africa","flag":"ZA","redha":"have","mat":"have","page":1},{"id":"RSA-2","first":"Aubrey","last":"MODIBA","club":"Mamelodi Sundowns","country":"South Africa","flag":"ZA","redha":"missing","mat":"double","page":1},{"id":"RSA-3","first":"Siyabonga","last":"NGEZANA","club":"FCSB","country":"South Africa","flag":"ZA","redha":"double","mat":"have","page":1},{"id":"RSA-4","first":"Bafana","last":"AUBAAR","club":"Orlando Pirates","country":"South Africa","flag":"ZA","redha":"have","mat":"have","page":1},{"id":"RSA-5","first":"Sfiso","last":"MBULE","club":"Orlando Pirates","country":"South Africa","flag":"ZA","redha":"have","mat":"have","page":1},{"id":"RSA-6","first":"Cole","last":"FOSTER","club":"Bucharest FC","country":"South Africa","flag":"ZA","redha":"have","mat":"have","page":1},{"id":"RSA-7","first":"Yava","last":"SITHOLE","club":"Supersport United","country":"South Africa","flag":"ZA","redha":"missing","mat":"missing","page":1},{"id":"RSA-8","first":"Dlulile","last":"MUDAU","club":"Mamelodi Sundowns","country":"South Africa","flag":"ZA","redha":"have","mat":"double","page":1},{"id":"RSA-9","first":"Tebogo","last":"MOKOENA","club":"Mamelodi Sundowns","country":"South Africa","flag":"ZA","redha":"have","mat":"have","page":1},{"id":"RSA-10","first":"Mduduzi","last":"MBOKAZI","club":"Supersport United","country":"South Africa","flag":"ZA","redha":"have","mat":"have","page":1},{"id":"RSA-11","first":"Oswin","last":"APPOLLIS","club":"Mamelodi Sundowns","country":"South Africa","flag":"ZA","redha":"have","mat":"have","page":1},{"id":"ESP-B","first":"","last":"BADGE","club":"","country":"Spain","flag":"ES","redha":"double","mat":"have","page":28},{"id":"ESP-1","first":"Robin","last":"LE NORMAND","club":"Atletico Madrid","country":"Spain","flag":"ES","redha":"have","mat":"missing","page":28},{"id":"ESP-2","first":"","last":"RODRI","club":"Manchester City","country":"Spain","flag":"ES","redha":"have","mat":"missing","page":28},{"id":"ESP-3","first":"Martin","last":"ZUBIMENDI","club":"Arsenal","country":"Spain","flag":"ES","redha":"have","mat":"have","page":28},{"id":"ESP-4","first":"Fabian","last":"RUIZ","club":"PSG","country":"Spain","flag":"ES","redha":"have","mat":"missing","page":28},{"id":"ESP-5","first":"Lamine","last":"YAMAL","club":"FC Barcelona","country":"Spain","flag":"ES","redha":"have","mat":"missing","page":28},{"id":"ESP-6","first":"Dani","last":"OLMO","club":"FC Barcelona","country":"Spain","flag":"ES","redha":"have","mat":"have","page":28},{"id":"ESP-7","first":"","last":"PEDRI","club":"FC Barcelona","country":"Spain","flag":"ES","redha":"missing","mat":"have","page":28},{"id":"ESP-8","first":"Marc","last":"CUCURELLA","club":"Chelsea","country":"Spain","flag":"ES","redha":"have","mat":"have","page":28},{"id":"ESP-9","first":"Mikel","last":"OYARZABAL","club":"Real Sociedad","country":"Spain","flag":"ES","redha":"have","mat":"have","page":28},{"id":"ESP-10","first":"Nico","last":"WILLIAMS","club":"Athletic Bilbao","country":"Spain","flag":"ES","redha":"double","mat":"have","page":28},{"id":"ESP-11","first":"Mikel","last":"OYARZABAL","club":"Real Sociedad","country":"Spain","flag":"ES","redha":"have","mat":"missing","page":28},{"id":"SWE-B","first":"","last":"BADGE","club":"","country":"Sweden","flag":"SE","redha":"missing","mat":"missing","page":22},{"id":"SWE-1","first":"Viktor","last":"JOHANSSON","club":"Stoke City","country":"Sweden","flag":"SE","redha":"have","mat":"have","page":22},{"id":"SWE-2","first":"Isak","last":"HIEN","club":"Atalanta BC","country":"Sweden","flag":"SE","redha":"have","mat":"have","page":22},{"id":"SWE-3","first":"Lucas","last":"BERGVALL","club":"Tottenham","country":"Sweden","flag":"SE","redha":"have","mat":"double","page":22},{"id":"SWE-4","first":"Emil","last":"HOLM","club":"Juventus","country":"Sweden","flag":"SE","redha":"have","mat":"have","page":22},{"id":"SWE-5","first":"Victor","last":"NILSSON LINDELOF","club":"Aston Villa","country":"Sweden","flag":"SE","redha":"have","mat":"have","page":22},{"id":"SWE-6","first":"Vasin","last":"AYARI","club":"AIK","country":"Sweden","flag":"SE","redha":"missing","mat":"have","page":22},{"id":"SWE-7","first":"Daniel","last":"SVENSSON","club":"Bodo Glimt","country":"Sweden","flag":"SE","redha":"have","mat":"have","page":22},{"id":"SWE-8","first":"Dejan","last":"KULUSEVSKI","club":"Tottenham","country":"Sweden","flag":"SE","redha":"missing","mat":"have","page":22},{"id":"SWE-9","first":"Anthony","last":"ELANGA","club":"Nottingham Forest","country":"Sweden","flag":"SE","redha":"missing","mat":"have","page":22},{"id":"SWE-10","first":"Alexander","last":"ISAK","club":"Newcastle","country":"Sweden","flag":"SE","redha":"have","mat":"have","page":22},{"id":"SWE-11","first":"Victor","last":"GYOKERES","club":"Arsenal","country":"Sweden","flag":"SE","redha":"have","mat":"have","page":22},{"id":"SUI-B","first":"","last":"BADGE GK","club":"","country":"Switzerland","flag":"CH","redha":"missing","mat":"have","page":7},{"id":"SUI-1","first":"Gregor","last":"KOBEL","club":"Borussia Dortmund","country":"Switzerland","flag":"CH","redha":"have","mat":"missing","page":7},{"id":"SUI-2","first":"Manuel","last":"AKANJI","club":"Manchester City","country":"Switzerland","flag":"CH","redha":"have","mat":"have","page":7},{"id":"SUI-3","first":"Silvan","last":"WIDMER","club":"Mainz 05","country":"Switzerland","flag":"CH","redha":"have","mat":"have","page":7},{"id":"SUI-4","first":"Granit","last":"XHAKA","club":"Bayer Leverkusen","country":"Switzerland","flag":"CH","redha":"have","mat":"missing","page":7},{"id":"SUI-5","first":"Remo","last":"FREULER","club":"Bologna FC","country":"Switzerland","flag":"CH","redha":"have","mat":"have","page":7},{"id":"SUI-6","first":"Fabian","last":"RIEDER","club":"FC Augsburg","country":"Switzerland","flag":"CH","redha":"double","mat":"have","page":7},{"id":"SUI-7","first":"Fabian","last":"WIEDER","club":"Stade Rennais","country":"Switzerland","flag":"CH","redha":"have","mat":"have","page":7},{"id":"SUI-8","first":"Breel","last":"EMBOLO","club":"Stade Rennais","country":"Switzerland","flag":"CH","redha":"have","mat":"double","page":7},{"id":"SUI-9","first":"Ruben","last":"VARGAS","club":"Sevilla FC","country":"Switzerland","flag":"CH","redha":"have","mat":"have","page":7},{"id":"SUI-10","first":"Ricardo","last":"RODRIGUEZ","club":"Real Betis","country":"Switzerland","flag":"CH","redha":"have","mat":"double","page":7},{"id":"SUI-11","first":"Nico","last":"ELVEDI","club":"Monchengladbach","country":"Switzerland","flag":"CH","redha":"have","mat":"have","page":7},{"id":"TUN-B","first":"","last":"BADGE","club":"","country":"Tunisia","flag":"TN","redha":"have","mat":"have","page":23},{"id":"TUN-1","first":"Aymen","last":"DAHMEN","club":"Stade Rennais","country":"Tunisia","flag":"TN","redha":"have","mat":"missing","page":23},{"id":"TUN-2","first":"Montassar","last":"TALBI","club":"Lorient","country":"Tunisia","flag":"TN","redha":"have","mat":"missing","page":23},{"id":"TUN-3","first":"Yassine","last":"MERIAH","club":"Al-Shamal SC","country":"Tunisia","flag":"TN","redha":"have","mat":"have","page":23},{"id":"TUN-4","first":"Ali","last":"ABDI","club":"Watford","country":"Tunisia","flag":"TN","redha":"have","mat":"double","page":23},{"id":"TUN-5","first":"Ferjani","last":"SASSI","club":"Al-Qadsiah","country":"Tunisia","flag":"TN","redha":"double","mat":"have","page":23},{"id":"TUN-6","first":"Ellyes","last":"SKHIRI","club":"Eintracht Frankfurt","country":"Tunisia","flag":"TN","redha":"double","mat":"double","page":23},{"id":"TUN-7","first":"Aissa","last":"LAIDOUNI","club":"Watford","country":"Tunisia","flag":"TN","redha":"double","mat":"missing","page":23},{"id":"TUN-8","first":"Hannibal","last":"MEJBRI","club":"Burnley","country":"Tunisia","flag":"TN","redha":"missing","mat":"have","page":23},{"id":"TUN-9","first":"Naim","last":"SLITI","club":"Al-Shamal SC","country":"Tunisia","flag":"TN","redha":"have","mat":"double","page":23},{"id":"TUN-10","first":"Elias","last":"ACHOIRI","club":"FC Copenhagen","country":"Tunisia","flag":"TN","redha":"have","mat":"have","page":23},{"id":"TUN-11","first":"Hazem","last":"MASTOURI","club":"El Ahly Tripoli","country":"Tunisia","flag":"TN","redha":"have","mat":"have","page":23},{"id":"TUR-B","first":"","last":"BADGE","club":"","country":"Turkey","flag":"TR","redha":"have","mat":"have","page":15},{"id":"TUR-1","first":"Berk","last":"MULDUR","club":"Eintracht Frankfurt","country":"Turkey","flag":"TR","redha":"have","mat":"have","page":15},{"id":"TUR-2","first":"Fethi","last":"KADIOGLU","club":"Fenerbahce","country":"Turkey","flag":"TR","redha":"have","mat":"missing","page":15},{"id":"TUR-3","first":"Abdulkerim","last":"BARDAKCI","club":"Galatasaray","country":"Turkey","flag":"TR","redha":"missing","mat":"have","page":15},{"id":"TUR-4","first":"Hakan","last":"CALHANOGLU","club":"Inter Milan","country":"Turkey","flag":"TR","redha":"have","mat":"have","page":15},{"id":"TUR-5","first":"Orkun","last":"KOKCU","club":"Besiktas JK","country":"Turkey","flag":"TR","redha":"double","mat":"have","page":15},{"id":"TUR-6","first":"Ogun","last":"KOKCU","club":"Besiktas JK","country":"Turkey","flag":"TR","redha":"have","mat":"missing","page":15},{"id":"TUR-7","first":"Arda","last":"GULER","club":"Real Madrid","country":"Turkey","flag":"TR","redha":"have","mat":"have","page":15},{"id":"TUR-8","first":"Can","last":"UZUN","club":"Eintracht Frankfurt","country":"Turkey","flag":"TR","redha":"have","mat":"have","page":15},{"id":"TUR-9","first":"Serem","last":"AKTURKOGLU","club":"Eintracht Frankfurt","country":"Turkey","flag":"TR","redha":"have","mat":"have","page":15},{"id":"TUR-10","first":"Merih","last":"DEMIRAL","club":"Al-Qadsiah","country":"Turkey","flag":"TR","redha":"have","mat":"have","page":15},{"id":"TUR-11","first":"Kenan","last":"YILDIZ","club":"Juventus","country":"Turkey","flag":"TR","redha":"double","mat":"have","page":15},{"id":"URU-B","first":"","last":"BADGE","club":"","country":"Uruguay","flag":"UY","redha":"have","mat":"missing","page":31},{"id":"URU-1","first":"Sergio","last":"ROCHET","club":"Sport Club Internacional","country":"Uruguay","flag":"UY","redha":"have","mat":"have","page":31},{"id":"URU-2","first":"Jose Maria","last":"GIMENEZ","club":"Atletico Madrid","country":"Uruguay","flag":"UY","redha":"have","mat":"missing","page":31},{"id":"URU-3","first":"Rodrigo","last":"BENTANCUR","club":"Tottenham","country":"Uruguay","flag":"UY","redha":"have","mat":"have","page":31},{"id":"URU-4","first":"Manuel","last":"UGARTE","club":"Manchester Utd","country":"Uruguay","flag":"UY","redha":"have","mat":"have","page":31},{"id":"URU-5","first":"Facundo","last":"PELLISTRI","club":"Parma","country":"Uruguay","flag":"UY","redha":"have","mat":"have","page":31},{"id":"URU-6","first":"Ronald","last":"ARAUJO","club":"FC Barcelona","country":"Uruguay","flag":"UY","redha":"double","mat":"have","page":31},{"id":"URU-7","first":"Federico","last":"VALVERDE","club":"Real Madrid","country":"Uruguay","flag":"UY","redha":"missing","mat":"have","page":31},{"id":"URU-8","first":"Sebastian","last":"CACERES","club":"Club America","country":"Uruguay","flag":"UY","redha":"have","mat":"have","page":31},{"id":"URU-9","first":"Mathias","last":"OLIVERA","club":"Napoli","country":"Uruguay","flag":"UY","redha":"have","mat":"have","page":31},{"id":"URU-10","first":"Martin","last":"NUNEZ","club":"River Plate","country":"Uruguay","flag":"UY","redha":"have","mat":"have","page":31},{"id":"URU-11","first":"Darwin","last":"NUNEZ","club":"Liverpool","country":"Uruguay","flag":"UY","redha":"have","mat":"have","page":31},{"id":"UZB-B","first":"","last":"BADGE","club":"","country":"Uzbekistan","flag":"UZ","redha":"have","mat":"missing","page":42},{"id":"UZB-1","first":"Utkir","last":"VUSUPOV","club":"Lokomotiv Tashkent","country":"Uzbekistan","flag":"UZ","redha":"missing","mat":"have","page":42},{"id":"UZB-2","first":"Abbosbek","last":"KHUSANOV","club":"Manchester City","country":"Uzbekistan","flag":"UZ","redha":"have","mat":"double","page":42},{"id":"UZB-3","first":"Nodir","last":"ALIKULOV","club":"Pakhtakor","country":"Uzbekistan","flag":"UZ","redha":"have","mat":"have","page":42},{"id":"UZB-4","first":"Ruslan","last":"ABDUMANNOPOV","club":"Istiklol","country":"Uzbekistan","flag":"UZ","redha":"have","mat":"missing","page":42},{"id":"UZB-5","first":"Farrukh","last":"SAYFIEV","club":"FC Metallurg","country":"Uzbekistan","flag":"UZ","redha":"have","mat":"have","page":42},{"id":"UZB-6","first":"Sherzod","last":"NASRULLAEV","club":"Pakhtakor","country":"Uzbekistan","flag":"UZ","redha":"missing","mat":"missing","page":42},{"id":"UZB-7","first":"Khojiakbar","last":"ALIJONOV","club":"Pakhtakor","country":"Uzbekistan","flag":"UZ","redha":"missing","mat":"missing","page":42},{"id":"UZB-8","first":"Otabek","last":"SHUKUROV","club":"FC Baniyas","country":"Uzbekistan","flag":"UZ","redha":"have","mat":"double","page":42},{"id":"UZB-9","first":"Odjen","last":"HAMROBILAROV","club":"Pakhtakor","country":"Uzbekistan","flag":"UZ","redha":"have","mat":"have","page":42},{"id":"UZB-10","first":"Dilshod","last":"MUKHANOV","club":"Pakhtakor","country":"Uzbekistan","flag":"UZ","redha":"have","mat":"have","page":42},{"id":"UZB-11","first":"Eldor","last":"SHOMURODOV","club":"Venezia","country":"Uzbekistan","flag":"UZ","redha":"have","mat":"missing","page":42},{"id":"KOR-B","first":"","last":"BADGE","club":"","country":"Korea Republic","flag":"KR","redha":"have","mat":"have","page":2},{"id":"KOR-1","first":"Hyeonwoo","last":"JO","club":"Ulsan HD FC","country":"Korea Republic","flag":"KR","redha":"have","mat":"have","page":2},{"id":"KOR-2","first":"Minjae","last":"KIM","club":"FC Bayern Munich","country":"Korea Republic","flag":"KR","redha":"have","mat":"have","page":2},{"id":"KOR-3","first":"Yumin","last":"CHO","club":"Sharjah FC","country":"Korea Republic","flag":"KR","redha":"have","mat":"have","page":2},{"id":"KOR-4","first":"Youngwoo","last":"SEOL","club":"FK Crvena Zvezda","country":"Korea Republic","flag":"KR","redha":"have","mat":"have","page":2},{"id":"KOR-5","first":"Jaesung","last":"LEE","club":"1.FSV Mainz 05","country":"Korea Republic","flag":"KR","redha":"have","mat":"have","page":2},{"id":"KOR-6","first":"Inbeom","last":"HWANG","club":"Feyenoord","country":"Korea Republic","flag":"KR","redha":"have","mat":"missing","page":2},{"id":"KOR-7","first":"Kangin","last":"LEE","club":"Paris Saint-Germain","country":"Korea Republic","flag":"KR","redha":"have","mat":"have","page":2},{"id":"KOR-8","first":"Jens","last":"CASTROP","club":"Borussia Monchengladbach","country":"Korea Republic","flag":"KR","redha":"have","mat":"have","page":2},{"id":"KOR-9","first":"Heungmin","last":"SON","club":"Los Angeles FC","country":"Korea Republic","flag":"KR","redha":"have","mat":"missing","page":2},{"id":"KOR-10","first":"Heechan","last":"HWANG","club":"Wolverhampton Wanderers","country":"Korea Republic","flag":"KR","redha":"have","mat":"have","page":2},{"id":"KOR-11","first":"Hyeongyu","last":"OH","club":"KRC Genk","country":"Korea Republic","flag":"KR","redha":"have","mat":"have","page":2},{"id":"USA-B","first":"","last":"BADGE","club":"","country":"USA","flag":"US","redha":"have","mat":"have","page":12},{"id":"USA-1","first":"Matt","last":"FREESE","club":"New York City FC","country":"USA","flag":"US","redha":"have","mat":"have","page":12},{"id":"USA-2","first":"Chris","last":"RICHARDS","club":"Crystal Palace FC","country":"USA","flag":"US","redha":"have","mat":"have","page":12},{"id":"USA-3","first":"Tim","last":"REAM","club":"Charlotte FC","country":"USA","flag":"US","redha":"have","mat":"have","page":12},{"id":"USA-4","first":"Mark","last":"MCKENZIE","club":"Toulouse FC","country":"USA","flag":"US","redha":"have","mat":"missing","page":12},{"id":"USA-5","first":"Tyler","last":"ADAMS","club":"AFC Bournemouth","country":"USA","flag":"US","redha":"have","mat":"have","page":12},{"id":"USA-6","first":"Weston","last":"MCKENNIE","club":"Juventus","country":"USA","flag":"US","redha":"have","mat":"have","page":12},{"id":"USA-7","first":"Timothy","last":"WEAH","club":"Olympique de Marseille","country":"USA","flag":"US","redha":"have","mat":"have","page":12},{"id":"USA-8","first":"Malik","last":"TILLMAN","club":"Bayer 04 Leverkusen","country":"USA","flag":"US","redha":"have","mat":"have","page":12},{"id":"USA-9","first":"Christian","last":"PULISIC","club":"AC Milan","country":"USA","flag":"US","redha":"have","mat":"missing","page":12},{"id":"USA-10","first":"Brenden","last":"AARONSON","club":"Leeds United","country":"USA","flag":"US","redha":"have","mat":"have","page":12},{"id":"USA-11","first":"Folarin","last":"BALOGUN","club":"AS Monaco","country":"USA","flag":"US","redha":"have","mat":"missing","page":12},{"id":"CUW-4","first":"Roshon","last":"VAN EIJMA","club":"RKC Waalwijk","country":"Curazao","flag":"CW","redha":"have","mat":"have","page":17},{"id":"CUW-5","first":"Shurandy","last":"SAMBO","club":"Sparta Rotterdam","country":"Curazao","flag":"CW","redha":"have","mat":"have","page":17},{"id":"CUW-6","first":"Livano","last":"COMENENCIA","club":"FC Zurich","country":"Curazao","flag":"CW","redha":"have","mat":"have","page":17},{"id":"CUW-7","first":"Juninho","last":"BACUNA","club":"Gaziantep FK","country":"Curazao","flag":"CW","redha":"have","mat":"have","page":17},{"id":"CUW-8","first":"Leandro","last":"BACUNA","club":"Eddir FK","country":"Curazao","flag":"CW","redha":"have","mat":"have","page":17},{"id":"CUW-9","first":"Kenji","last":"GORRE","club":"Maccabi Haifa FC","country":"Curazao","flag":"CW","redha":"have","mat":"have","page":17},{"id":"CUW-10","first":"Jurgen","last":"LOCADIA","club":"Miami FC","country":"Curazao","flag":"CW","redha":"have","mat":"have","page":17},{"id":"CUW-11","first":"Sontje","last":"HANSEN","club":"Middlesbrough FC","country":"Curazao","flag":"CW","redha":"have","mat":"have","page":17},{"id":"CRO-4","first":"Josip","last":"STANISIC","club":"FC Bayern Munich","country":"Croatia","flag":"HR","redha":"have","mat":"have","page":45},{"id":"CRO-5","first":"Ivan","last":"PERISIC","club":"PSV Eindhoven","country":"Croatia","flag":"HR","redha":"have","mat":"have","page":45},{"id":"CRO-6","first":"Luka","last":"MODRIC","club":"AC Milan","country":"Croatia","flag":"HR","redha":"have","mat":"have","page":45},{"id":"CRO-7","first":"Mateo","last":"KOVACIC","club":"Manchester City FC","country":"Croatia","flag":"HR","redha":"have","mat":"have","page":45},{"id":"CRO-8","first":"Lovro","last":"MAJER","club":"VfL Wolfsburg","country":"Croatia","flag":"HR","redha":"have","mat":"have","page":45},{"id":"CRO-9","first":"Mario","last":"PASALIC","club":"Atalanta BC","country":"Croatia","flag":"HR","redha":"have","mat":"have","page":45},{"id":"CRO-10","first":"Ante","last":"BUDIMIR","club":"CA Osasuna","country":"Croatia","flag":"HR","redha":"have","mat":"have","page":45},{"id":"CRO-11","first":"Andrej","last":"KRAMARIC","club":"TSG 1899 Hoffenheim","country":"Croatia","flag":"HR","redha":"have","mat":"have","page":45},{"id":"ALG-2","first":"Rayan","last":"AIT-NOURI","club":"Manchester City FC","country":"Algeria","flag":"DZ","redha":"double","mat":"have","page":37},{"id":"ALG-3","first":"Ramy","last":"BENSEBAINI","club":"Borussia Dortmund","country":"Algeria","flag":"DZ","redha":"have","mat":"have","page":37},{"id":"ALG-4","first":"Youcef","last":"ATAL","club":"Al Sadd SC","country":"Algeria","flag":"DZ","redha":"have","mat":"have","page":37},{"id":"ALG-5","first":"Aissa","last":"MANDI","club":"LOSC Lille","country":"Algeria","flag":"DZ","redha":"have","mat":"have","page":37},{"id":"ALG-6","first":"Nabil","last":"BENTALEB","club":"LOSC Lille","country":"Algeria","flag":"DZ","redha":"have","mat":"have","page":37},{"id":"ALG-7","first":"Riyad","last":"MAHREZ","club":"Al-Ahli Saudi FC","country":"Algeria","flag":"DZ","redha":"have","mat":"have","page":37},{"id":"ALG-8","first":"Said","last":"BENRAHMA","club":"NEOM SC","country":"Algeria","flag":"DZ","redha":"have","mat":"have","page":37},{"id":"ALG-9","first":"Amine","last":"GOUIRI","club":"Olympique de Marseille","country":"Algeria","flag":"DZ","redha":"have","mat":"have","page":37},{"id":"ALG-10","first":"Mohammed","last":"AMOURA","club":"VfL Wolfsburg","country":"Algeria","flag":"DZ","redha":"have","mat":"double","page":37},{"id":"ALG-11","first":"Baghdad","last":"BOUNEDJAH","club":"Al-Shamal SC","country":"Algeria","flag":"DZ","redha":"have","mat":"have","page":37},{"id":"CIV-0","first":"Yahia","last":"FOFANA","club":"Chelsea","country":"Cote d Ivoire","flag":"CI","redha":"have","mat":"have","page":18},{"id":"CZE-0","first":"Matej","last":"KOVAR","club":"Bayer Leverkusen","country":"Czechia","flag":"CZ","redha":"have","mat":"have","page":3},{"id":"EGY-0","first":"Mohamed","last":"ELSHENAWY","club":"Al Ahly","country":"Egypt","flag":"EG","redha":"double","mat":"have","page":25},{"id":"NOR-0","first":"Orjan","last":"NYLAND","club":"Sevilla FC","country":"Norway","flag":"NO","redha":"double","mat":"have","page":35},{"id":"PAR-0","first":"Orlando","last":"GILL","club":"San Lorenzo","country":"Paraguay","flag":"PY","redha":"have","mat":"have","page":13}];
+const EM = {"DZ":"🇩🇿","AR":"🇦🇷","AU":"🇦🇺","AT":"🇦🇹","BE":"🇧🇪","BA":"🇧🇦","BR":"🇧🇷","CV":"🇨🇻","CA":"🇨🇦","CO":"🇨🇴","CD":"🇨🇩","CI":"🇨🇮","HR":"🇭🇷","CW":"🇨🇼","CZ":"🇨🇿","EC":"🇪🇨","EG":"🇪🇬","EN":"🏴","FR":"🇫🇷","DE":"🇩🇪","GH":"🇬🇭","HT":"🇭🇹","IR":"🇮🇷","IQ":"🇮🇶","JP":"🇯🇵","JO":"🇯🇴","MX":"🇲🇽","MA":"🇲🇦","NL":"🇳🇱","NZ":"🇳🇿","NO":"🇳🇴","PA":"🇵🇦","PY":"🇵🇾","PT":"🇵🇹","QA":"🇶🇦","SA":"🇸🇦","SC":"🏴","SN":"🇸🇳","ZA":"🇿🇦","ES":"🇪🇸","SE":"🇸🇪","CH":"🇨🇭","TN":"🇹🇳","TR":"🇹🇷","UY":"🇺🇾","UZ":"🇺🇿","KR":"🇰🇷","US":"🇺🇸"};
+const flagOf = c => EM[c] || '🏳️';
+const cycle = { have:'double', double:'missing', missing:'have' };
+
+// Country page order (1..48) derived from seed
+const COUNTRY_ORDER = (() => {
+  const seen={}, list=[];
+  for (const s of SEED){ if(!(s.country in seen)){ seen[s.country]=s.page; list.push(s.country);} }
+  list.sort((a,b)=>seen[a]-seen[b]);
+  return list;
+})();
+
+// ── STATE ─────────────────────────────────────────────────────────────
+let players = [];           // [{id, display_name, color, emoji}]
+let statusByPlayer = {};    // {p1:{sticker_id:status}, ...}
+let doneSet = new Set();    // 'pairKey|stickerId'
+let me = null;              // current player id
+let view='team', filter='all', query='', country='', editMode=false;
+let writing = 0;            // guard against poll overwrite
+
+// ── UTILITIES ─────────────────────────────────────────────────────────
+const showErr = msg => { const e=document.getElementById('err'); e.textContent=msg; e.style.display='block'; setTimeout(()=>e.style.display='none',5000); };
+const pairKey = (a,b) => [a,b].sort().join('|');
+function statusOf(playerId, sid){
+  const ov = statusByPlayer[playerId] || {};
+  if (ov[sid]) return ov[sid];
+  // default for new player is 'missing' for everyone
+  // for p1 (Rédha) and p2 (Mat) we seed defaults from SEED.redha / .mat
+  if (playerId==='p1') return SEED.find(x=>x.id===sid).redha;
+  if (playerId==='p2') return SEED.find(x=>x.id===sid).mat;
+  return 'missing';
+}
+
+// ── DATA LOAD ─────────────────────────────────────────────────────────
+async function loadAll(){
+  if (writing>0) return;
+  try {
+    const [p, st, dn] = await Promise.all([
+      sb.from('players').select('*').order('sort_order'),
+      sb.from('sticker_status').select('*'),
+      sb.from('swaps_done').select('*')
+    ]);
+    if (p.error) throw p.error;
+    if (st.error) throw st.error;
+    if (dn.error) throw dn.error;
+    players = p.data;
+    statusByPlayer = {};
+    for (const row of st.data) {
+      if (!statusByPlayer[row.player_id]) statusByPlayer[row.player_id] = {};
+      statusByPlayer[row.player_id][row.sticker_id] = row.status;
+    }
+    doneSet = new Set(dn.data.map(r => r.pair_key + '|' + r.sticker_id));
+    document.getElementById('sync').textContent = 'synced ' + new Date().toLocaleTimeString();
+    if (me) render(); else renderSplash();
+  } catch (e) {
+    showErr('Sync error: ' + (e.message||e));
+    console.error(e);
+  }
+}
+
+// ── WRITE: edit my status ─────────────────────────────────────────────
+async function setStatus(stickerId, newStatus){
+  writing++;
+  try {
+    // update local first
+    if (!statusByPlayer[me]) statusByPlayer[me] = {};
+    statusByPlayer[me][stickerId] = newStatus;
+    render();
+    const { error } = await sb.from('sticker_status')
+      .upsert({ player_id: me, sticker_id: stickerId, status: newStatus, updated_at: new Date().toISOString() });
+    if (error) throw error;
+    document.getElementById('sync').textContent = 'saved ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    showErr('Save failed: ' + (e.message||e));
+  } finally { writing--; }
+}
+function cycleStatus(stickerId){
+  const cur = statusOf(me, stickerId);
+  setStatus(stickerId, cycle[cur] || 'have');
+}
+
+// ── WRITE: validate swap (sticky, irreversible) ───────────────────────
+async function validateSwap(stickerId, otherPlayerId){
+  writing++;
+  try {
+    const pk = pairKey(me, otherPlayerId);
+    // 1) write done first (the safety net)
+    const { error: e1 } = await sb.from('swaps_done')
+      .upsert({ pair_key: pk, sticker_id: stickerId });
+    if (e1) throw e1;
+    doneSet.add(pk + '|' + stickerId);
+    // 2) set both players to 'have'
+    const upserts = [
+      { player_id: me, sticker_id: stickerId, status: 'have', updated_at: new Date().toISOString() },
+      { player_id: otherPlayerId, sticker_id: stickerId, status: 'have', updated_at: new Date().toISOString() },
+    ];
+    const { error: e2 } = await sb.from('sticker_status').upsert(upserts);
+    if (e2) throw e2;
+    if (!statusByPlayer[me]) statusByPlayer[me] = {};
+    if (!statusByPlayer[otherPlayerId]) statusByPlayer[otherPlayerId] = {};
+    statusByPlayer[me][stickerId] = 'have';
+    statusByPlayer[otherPlayerId][stickerId] = 'have';
+    render();
+    document.getElementById('sync').textContent = 'traded ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    showErr('Trade failed: ' + (e.message||e));
+  } finally { writing--; }
+}
+
+// ── REALTIME ──────────────────────────────────────────────────────────
+function subscribeRealtime(){
+  sb.channel('panini-realtime')
+    .on('postgres_changes', { event:'*', schema:'public', table:'sticker_status' }, () => loadAll())
+    .on('postgres_changes', { event:'*', schema:'public', table:'swaps_done' }, () => loadAll())
+    .on('postgres_changes', { event:'*', schema:'public', table:'players' }, () => loadAll())
+    .subscribe();
+}
+
+// ── SWAP COMPUTATION (group-wide) ─────────────────────────────────────
+// For current player 'me', for each other player o, for each sticker:
+//   isGiveMe: me=missing, o=double, and pair(me,o) not done
+//   isGiveThem: me=double, o=missing, and pair(me,o) not done
+function swapsForMe(){
+  const out = [];
+  for (const o of players){
+    if (o.id===me) continue;
+    for (const s of SEED){
+      const mst = statusOf(me, s.id);
+      const ost = statusOf(o.id, s.id);
+      const pk = pairKey(me, o.id);
+      if (doneSet.has(pk+'|'+s.id)) continue;
+      if (mst==='missing' && ost==='double') out.push({...s, other:o, dir:'get'});
+      else if (mst==='double' && ost==='missing') out.push({...s, other:o, dir:'give'});
+    }
+  }
+  out.sort((a,b)=>a.page-b.page);
+  return out;
+}
+
+// ── RENDER: splash ────────────────────────────────────────────────────
+function renderSplash(){
+  const root = document.getElementById('splashCards');
+  if (players.length===0){ root.innerHTML='<div class="spinner">Loading…</div>'; return; }
+  let h='';
+  for (const p of players){
+    // count stats for splash card
+    let miss=0,dbl=0,have=0,swaps=0;
+    for (const s of SEED){
+      const st = statusOf(p.id, s.id);
+      if (st==='missing') miss++; else have++;
+      if (st==='double') dbl++;
+    }
+    // swaps for this player against everyone else
+    for (const o of players){
+      if (o.id===p.id) continue;
+      for (const s of SEED){
+        const mst = statusOf(p.id, s.id), ost = statusOf(o.id, s.id);
+        const pk = pairKey(p.id, o.id);
+        if (doneSet.has(pk+'|'+s.id)) continue;
+        if ((mst==='missing'&&ost==='double')||(mst==='double'&&ost==='missing')) swaps++;
+      }
+    }
+    h += `<div class="sp-card" style="border-color:${p.color}33" onclick="pickMe('${p.id}')">
+      <div class="av">${p.emoji}</div>
+      <div class="pn" style="color:${p.color}">${escapeHtml(p.display_name)}</div>
+      <div class="ps"><b style="color:var(--red)">${miss}</b> missing · <b style="color:var(--blue)">${dbl}</b> doubles<br><b style="color:var(--teal)">${swaps}</b> swaps</div>
+    </div>`;
+  }
+  root.innerHTML = h;
+}
+
+function pickMe(id){
+  me = id;
+  document.getElementById('splash').style.display='none';
+  document.getElementById('app').style.display='block';
+  const p = players.find(x=>x.id===id);
+  const b = document.getElementById('pbadge');
+  b.style.color=p.color; b.style.borderColor=p.color+'44'; b.style.background=p.color+'22';
+  b.innerHTML = p.emoji+' '+escapeHtml(p.display_name)+' ▾';
+  populateCountrySelect();
+  render();
+}
+function backSplash(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('splash').style.display='flex';
+  renderSplash();
+}
+
+function populateCountrySelect(){
+  const sel = document.getElementById('csel');
+  sel.innerHTML = '<option value="">All countries</option>' +
+    COUNTRY_ORDER.map((c,i)=>`<option value="${c}">${i+1}. ${c}</option>`).join('');
+}
+
+// ── RENDER: main ──────────────────────────────────────────────────────
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function setQ(v){ query=v.toLowerCase().trim(); render(); }
+function setCountry(v){ country=v; render(); }
+function setF(f,btn){ filter=f; document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); render(); }
+function setV(v){ view=v;
+  document.getElementById('vTB').className='vb'+(v==='team'?' on':'');
+  document.getElementById('vPB').className='vb'+(v==='player'?' on':'');
+  document.getElementById('teamView').style.display=v==='team'?'':'none';
+  document.getElementById('playerView').style.display=v==='player'?'':'none';
+  render();
+}
+function toggleEdit(){ editMode=!editMode;
+  document.getElementById('editBtn').className='editBtn'+(editMode?' on':'');
+  document.getElementById('editBtn').textContent = editMode?'✓ Done':'✎ Edit';
+  document.getElementById('editBanner').style.display = editMode?'block':'none';
+  render();
+}
+
+function passes(s){
+  if (country && s.country !== country) return false;
+  const m = statusOf(me, s.id);
+  let ok = true;
+  if (filter==='miss') ok = m==='missing';
+  else if (filter==='dbl') ok = m==='double';
+  else if (filter==='have') ok = m!=='missing';
+  else if (filter==='swap') ok = swapsForMe().some(x=>x.id===s.id);
+  if (!ok) return false;
+  if (query){
+    const h=(s.last+' '+s.first+' '+s.club+' '+s.country).toLowerCase();
+    if (!h.includes(query)) return false;
+  }
+  return true;
+}
+
+function render(){
+  if (!me) return;
+  renderStats();
+  renderSwapPanel();
+  if (view==='team') renderTeam(); else renderPlayer();
+}
+
+function renderStats(){
+  let miss=0,dbl=0,have=0;
+  for (const s of SEED){
+    const m = statusOf(me, s.id);
+    if (m==='missing') miss++; else have++;
+    if (m==='double') dbl++;
+  }
+  const swaps = swapsForMe().length;
+  document.getElementById('sbar').innerHTML =
+    `<div class="sc s-miss"><div class="n">${miss}</div><div class="l">Missing</div></div>
+     <div class="sc s-dbl"><div class="n">${dbl}</div><div class="l">Doubles</div></div>
+     <div class="sc s-have"><div class="n">${have}</div><div class="l">Have</div></div>
+     <div class="sc s-swap"><div class="n">${swaps}</div><div class="l">Swaps</div></div>
+     <div class="sc s-tot"><div class="n">${SEED.length}</div><div class="l">Total</div></div>`;
+}
+
+function renderSwapPanel(){
+  const swaps = swapsForMe();
+  document.getElementById('swaptitle').textContent = '⇄ Swaps ('+swaps.length+')';
+  let h='';
+  if (swaps.length===0) h='<span style="color:var(--muted);font-size:11px">No pending swaps</span>';
+  for (const s of swaps){
+    const get = s.dir==='get';
+    const col = get ? 'var(--teal)' : '#c084fc';
+    const dirTxt = get ? (escapeHtml(s.other.display_name)+' → me') : ('Me → '+escapeHtml(s.other.display_name));
+    h += `<div class="swapchip" style="border-color:${col}66">
+      <div class="dir" style="color:${col}">${dirTxt}</div>
+      <div class="sname">${escapeHtml(s.last)}</div>
+      <div class="sid">${s.id}${s.first?' · '+escapeHtml(s.first):''}</div>
+      <div class="sctry">${flagOf(s.flag)} ${escapeHtml(s.country)}</div>
+      <button class="vbtn" onclick="validateSwap('${s.id}','${s.other.id}')">✓ Traded</button>
+    </div>`;
+  }
+  document.getElementById('swapgrid').innerHTML = h;
+}
+
+function statusTag(o, sid){
+  // returns html for status of player o on this sticker, from MY perspective
+  const ost = statusOf(o.id, sid);
+  if (ost==='missing') return `<span class="tag t-opp-m">${escapeHtml(o.display_name)}:need</span>`;
+  if (ost==='double')  return `<span class="tag t-opp-d">${escapeHtml(o.display_name)}:x2</span>`;
+  return `<span class="tag t-opp-h">${escapeHtml(o.display_name)}:✓</span>`;
+}
+
+function renderTeam(){
+  const root=document.getElementById('teamView'); root.innerHTML='';
+  const byC={}, order=[];
+  for (const s of SEED){
+    if (editMode){
+      if (country && s.country!==country) continue;
+      if (query && !(s.last+' '+s.first+' '+s.club+' '+s.country).toLowerCase().includes(query)) continue;
+    } else if (!passes(s)) continue;
+    if (!byC[s.country]){byC[s.country]=[]; order.push(s.country);}
+    byC[s.country].push(s);
+  }
+  order.sort((a,b)=>byC[a][0].page-byC[b][0].page);
+  const any=order.length>0;
+  for (const c of order){
+    const arr=byC[c]; const f=flagOf(arr[0].flag);
+    const hasMiss=arr.some(s=>statusOf(me,s.id)==='missing');
+    const hasDbl =arr.some(s=>statusOf(me,s.id)==='double');
+    const swSet = new Set(swapsForMe().map(x=>x.id));
+    const hasSwap=arr.some(s=>swSet.has(s.id));
+    const allHave=!hasMiss&&!hasDbl;
+    const pageNum=arr[0].page+1;
+    let h=`<div class="cs"><div class="ch"><span class="pn">${pageNum}</span><span class="cf">${f}</span><span class="cn">${escapeHtml(c)}</span><span class="ctags">`;
+    if (hasSwap) h+='<span class="ctag ct-swap">SWAP</span>';
+    if (hasMiss) h+='<span class="ctag ct-miss">MISSING</span>';
+    if (hasDbl)  h+='<span class="ctag ct-dbl">DOUBLES</span>';
+    if (allHave && !editMode) h+='<span class="ctag ct-ok">COMPLETE</span>';
+    h+=`</span><span class="cc">${arr.length}</span></div><div class="sg">`;
+    for (const s of arr){
+      const m=statusOf(me,s.id);
+      const isBadge=s.last.startsWith('BADGE');
+      const isSwap=swSet.has(s.id);
+      const cls='sk s-'+m+(isSwap?' swap':'')+(editMode?' edit':'');
+      const onclick = editMode?` onclick="cycleStatus('${s.id}')"`:'';
+      let body = `<div class="sk-id">${s.id}</div>`;
+      if (!isBadge) body += `<div class="sk-f">${escapeHtml(s.first)}</div>`;
+      body += `<div class="sk-l">${isBadge?'BADGE':escapeHtml(s.last)}</div>`;
+      if (!isBadge) body += `<div class="sk-c">${escapeHtml(s.club)}</div>`;
+      // tags
+      let tags = '';
+      if (editMode){
+        const cls2 = m==='missing'?'t-mine-missing':m==='double'?'t-mine-double':'t-mine-have';
+        tags = `<span class="tag t-mine ${cls2}">${m.toUpperCase()}</span><span class="tag" style="color:var(--muted)">tap ↻</span>`;
+      } else {
+        // show status of each OTHER player for this sticker
+        for (const o of players){
+          if (o.id===me) continue;
+          tags += statusTag(o, s.id);
+        }
+      }
+      h += `<div class="${cls}"${onclick}>${body}<div>${tags}</div></div>`;
+    }
+    h+='</div></div>';
+    root.innerHTML += h;
+  }
+  document.getElementById('nr').className='nr'+(any?'':' show');
+}
+
+function renderPlayer(){
+  const list=document.getElementById('playerList'); list.innerHTML='';
+  const swSet = new Set(swapsForMe().map(x=>x.id));
+  const fil=SEED.filter(s=>passes(s));
+  fil.sort((a,b)=>{
+    const pri=s=>{ if(swSet.has(s.id))return 0; const m=statusOf(me,s.id); if(m==='missing')return 1; if(m==='double')return 2; return 3;};
+    const pa=pri(a),pb=pri(b); if(pa!==pb)return pa-pb;
+    if (a.page!==b.page) return a.page-b.page;
+    return a.last<b.last?-1:1;
+  });
+  let h='';
+  for (const s of fil){
+    const m=statusOf(me,s.id);
+    const nm = s.first?escapeHtml(s.first+' '+s.last):escapeHtml(s.last);
+    const bar = swSet.has(s.id)?'var(--teal)': m==='missing'?'var(--red)': m==='double'?'var(--blue)':'#1e3a5f';
+    const mySt = m==='missing'?'MISSING':m==='double'?'DOUBLE':'have';
+    const myCol = m==='missing'?'var(--red)':m==='double'?'var(--blue)':'var(--muted)';
+    // theirs: show concise summary (count of needers, doublers)
+    let needers=0, doublers=0;
+    for (const o of players){
+      if (o.id===me) continue;
+      const ost = statusOf(o.id, s.id);
+      if (ost==='missing') needers++;
+      else if (ost==='double') doublers++;
+    }
+    let theirs='', theirsCol='var(--muted)';
+    if (swSet.has(s.id)) { theirs='⇄ SWAP'; theirsCol='var(--teal)'; }
+    else if (doublers>0) { theirs=doublers+' x2'; theirsCol='var(--green)'; }
+    else if (needers>0) { theirs=needers+' need'; theirsCol='#c084fc'; }
+    else theirs='all ok';
+    const click = editMode?` onclick="cycleStatus('${s.id}')"`:'';
+    h += `<div class="plr" style="border-left:3px solid ${bar};cursor:${editMode?'pointer':'default'}"${click}>
+      <div class="pl-id">${s.id}</div>
+      <div class="pl-nm">${nm}</div>
+      <div class="pl-cl">${escapeHtml(s.club)}</div>
+      <div class="pl-ct">${flagOf(s.flag)} ${escapeHtml(s.country)}</div>
+      <div class="pl-st" style="color:${myCol}">${mySt}</div>
+      <div class="pl-st" style="color:${theirsCol}">${theirs}</div>
+    </div>`;
+  }
+  list.innerHTML = h;
+  document.getElementById('nr').className='nr'+(fil.length?'':' show');
+}
+
+// ── ADMIN MODE (?admin=1) ─────────────────────────────────────────────
+if (new URLSearchParams(location.search).get('admin')==='1'){
+  document.body.innerHTML = '<div style="padding:30px;max-width:600px;margin:0 auto;color:#f1f5f9;font-family:Arial">'+
+    '<h1 style="color:var(--gold);margin-bottom:14px">Admin · Panini WC2026</h1>'+
+    '<p style="color:#94a3b8;font-size:13px;margin-bottom:20px">Rename players, reset data, view stats.</p>'+
+    '<div id="adminContent">Loading…</div></div>';
+  loadAdmin();
+} else {
+  // Normal app boot
+  loadAll().then(()=>{ subscribeRealtime(); });
+  setInterval(loadAll, 15000); // safety poll
+}
+
+async function loadAdmin(){
+  const root = document.getElementById('adminContent');
+  const { data, error } = await sb.from('players').select('*').order('sort_order');
+  if (error){ root.innerHTML='Error: '+error.message; return; }
+  let h = '<h2 style="margin:14px 0 8px;font-size:14px;color:#fcd34d">Players</h2><div style="display:flex;flex-direction:column;gap:8px">';
+  for (const p of data){
+    h += `<div style="display:flex;gap:8px;align-items:center;background:#141422;padding:8px;border-radius:7px">
+      <span style="font-size:24px">${p.emoji}</span>
+      <input id="nm_${p.id}" value="${escapeHtml(p.display_name)}" style="flex:1;padding:6px 10px;background:#0c0c18;border:1px solid #ffffff20;border-radius:5px;color:#f1f5f9;font-size:13px">
+      <input id="em_${p.id}" value="${p.emoji}" style="width:50px;padding:6px;background:#0c0c18;border:1px solid #ffffff20;border-radius:5px;color:#f1f5f9;font-size:13px;text-align:center">
+      <button onclick="savePlayer('${p.id}')" style="padding:6px 12px;background:var(--teal);color:#0c0c18;border:none;border-radius:5px;font-weight:700;cursor:pointer">Save</button>
+    </div>`;
+  }
+  h += '</div>';
+  h += '<h2 style="margin:22px 0 8px;font-size:14px;color:#fcd34d">Danger Zone</h2>';
+  h += '<button onclick="resetDoneSwaps()" style="padding:8px 14px;background:#ef444433;color:var(--red);border:1px solid var(--red);border-radius:5px;cursor:pointer;font-size:12px;margin-right:8px">Reset traded-swaps history</button>';
+  h += '<button onclick="resetAllStatus()" style="padding:8px 14px;background:#ef444433;color:var(--red);border:1px solid var(--red);border-radius:5px;cursor:pointer;font-size:12px">Reset ALL player data</button>';
+  h += '<p style="margin-top:24px;font-size:11px;color:#475569"><a href="./" style="color:var(--teal)">← back to app</a></p>';
+  root.innerHTML = h;
+}
+async function savePlayer(id){
+  const nm = document.getElementById('nm_'+id).value.trim();
+  const em = document.getElementById('em_'+id).value.trim() || '⚪';
+  const { error } = await sb.from('players').update({display_name: nm, emoji: em}).eq('id', id);
+  if (error) alert('Save failed: '+error.message); else alert('Saved.');
+}
+async function resetDoneSwaps(){
+  if (!confirm('Clear ALL traded-swap history? Swaps that were marked done will reappear in the swap list.')) return;
+  const { error } = await sb.from('swaps_done').delete().neq('pair_key','');
+  if (error) alert('Failed: '+error.message); else alert('Cleared.');
+}
+async function resetAllStatus(){
+  if (!confirm('WIPE every player\'s sticker data? Cannot be undone.')) return;
+  if (!confirm('Really? This deletes everyone\'s collection state.')) return;
+  const { error } = await sb.from('sticker_status').delete().neq('player_id','');
+  if (error) alert('Failed: '+error.message); else alert('Wiped.');
+}
+
+// ── UPLOAD / AI EXTRACTION ────────────────────────────────────────────
+let uploadMode = null;       // 'album' or 'doubles'
+let lastExtraction = null;   // array of resolved {sticker_id, status} to apply
+
+function openUpload(mode){
+  uploadMode = mode;
+  document.getElementById('uploadTitle').textContent = mode === 'album' ? '📷 Scan album page' : '📷 Scan doubles pile';
+  document.getElementById('albumExtra').style.display = mode === 'album' ? 'block' : 'none';
+  if (mode === 'album'){
+    const sel = document.getElementById('uploadCountry');
+    sel.innerHTML = COUNTRY_ORDER.map((c,i)=>`<option value="${c}">${i+1}. ${c}</option>`).join('');
+  }
+  document.getElementById('uploadStatus').textContent = '';
+  document.getElementById('uploadResults').style.display = 'none';
+  document.getElementById('uploadPreview').style.display = 'none';
+  document.getElementById('uploadFile').value = '';
+  lastExtraction = null;
+  document.getElementById('uploadModal').style.display = 'flex';
+}
+function closeUpload(){
+  document.getElementById('uploadModal').style.display = 'none';
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const base64 = dataUrl.split(',')[1];
+      resolve({ base64, mimeType: file.type || 'image/jpeg', dataUrl });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Resize image client-side to keep payloads small (max 1600px wide, jpeg quality 0.85)
+async function resizeImage(file){
+  const { dataUrl } = await fileToBase64(file);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 1600;
+      let w = img.width, h = img.height;
+      if (w > maxW){ h = Math.round(h * maxW / w); w = maxW; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const jpeg = canvas.toDataURL('image/jpeg', 0.85);
+      const base64 = jpeg.split(',')[1];
+      resolve({ base64, mimeType: 'image/jpeg', dataUrl: jpeg });
+    };
+    img.src = dataUrl;
+  });
+}
+
+async function onFilePicked(event){
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('uploadStatus');
+  const preview = document.getElementById('uploadPreview');
+  status.textContent = 'Reading image…';
+
+  let prepared;
+  try { prepared = await resizeImage(file); }
+  catch (e){ status.textContent = '✗ Could not read image: ' + e.message; return; }
+
+  preview.src = prepared.dataUrl;
+  preview.style.display = 'block';
+  status.textContent = '⏳ Sending to AI… this can take 5–15 seconds';
+
+  let payload = { mode: uploadMode, imageBase64: prepared.base64, mimeType: prepared.mimeType };
+  if (uploadMode === 'album'){
+    payload.country = document.getElementById('uploadCountry').value;
+  }
+
+  let resp;
+  try {
+    resp = await fetch('/api/extract', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (e){
+    status.textContent = '✗ Network error: ' + e.message;
+    return;
+  }
+
+  if (!resp.ok){
+    let detail = '';
+    try { const j = await resp.json(); detail = j.error + (j.detail ? ': '+j.detail : ''); } catch(_) { detail = await resp.text(); }
+    status.textContent = '✗ ' + (detail || 'Server error');
+    return;
+  }
+
+  const result = await resp.json();
+  if (!result.stickers || result.stickers.length === 0){
+    status.textContent = '✗ Nothing detected. Try a clearer photo.';
+    return;
+  }
+
+  status.textContent = '✓ Detected ' + result.stickers.length + ' stickers. Review and apply:';
+  renderExtractionResults(result);
+}
+
+function renderExtractionResults(result){
+  const list = document.getElementById('uploadResultsList');
+  const resolved = []; // { sid, status, label, matched, checked }
+
+  if (result.mode === 'album'){
+    const country = result.country;
+    // Find stickers in DB for this country, indexed by their slot id
+    const countryStickers = SEED.filter(s => s.country === country);
+    const bySlot = {};
+    for (const s of countryStickers){
+      const num = s.id.split('-')[1]; // 'B','1','2',...
+      bySlot[num] = s;
+    }
+    for (const row of result.stickers){
+      const slot = String(row.slot);
+      const match = bySlot[slot];
+      if (match){
+        resolved.push({
+          sid: match.id,
+          status: row.status,
+          label: `${match.id} ${match.last || 'BADGE'}`,
+          matched: true,
+          checked: true,
+        });
+      } else {
+        resolved.push({
+          sid: null,
+          status: row.status,
+          label: `slot ${slot} (not in DB)`,
+          matched: false,
+          checked: false,
+        });
+      }
+    }
+  } else {
+    // doubles mode: match by (country, last name)
+    for (const row of result.stickers){
+      const country = row.country;
+      const last = (row.last || '').toUpperCase();
+      let match = null;
+      if (country && last){
+        if (last === 'BADGE'){
+          match = SEED.find(s => s.country === country && s.last === 'BADGE');
+        } else {
+          match = SEED.find(s => s.country === country && s.last === last);
+        }
+      }
+      resolved.push({
+        sid: match ? match.id : null,
+        status: row.status,
+        label: match ? `${match.id} ${match.last}${match.first?' ('+match.first+')':''}` : `${country||'?'} ${last||'?'} — no match`,
+        matched: !!match,
+        checked: !!match,
+      });
+    }
+  }
+
+  lastExtraction = resolved;
+
+  let h = '';
+  resolved.forEach((r, i) => {
+    const badgeCls = r.matched ? ('b-'+r.status) : 'b-unmatched';
+    h += `<div class="urow">
+      <input type="checkbox" id="urow_${i}" ${r.checked?'checked':''} ${r.matched?'':'disabled'} onchange="lastExtraction[${i}].checked=this.checked">
+      <span class="badge ${badgeCls}">${r.status.toUpperCase()}</span>
+      <span style="flex:1;color:${r.matched?'var(--txt)':'var(--muted)'}">${r.label}</span>
+    </div>`;
+  });
+  list.innerHTML = h;
+  document.getElementById('uploadResults').style.display = 'block';
+}
+
+async function applyExtraction(){
+  if (!lastExtraction) return;
+  const toApply = lastExtraction.filter(r => r.checked && r.matched);
+  if (toApply.length === 0){ alert('Nothing selected to apply.'); return; }
+
+  const btn = document.getElementById('applyBtn');
+  btn.disabled = true; btn.textContent = '⏳ Applying…';
+
+  writing++;
+  try {
+    // Build upsert rows in one call
+    const rows = toApply.map(r => ({
+      player_id: me,
+      sticker_id: r.sid,
+      status: r.status,
+      updated_at: new Date().toISOString()
+    }));
+    const { error } = await sb.from('sticker_status').upsert(rows);
+    if (error) throw error;
+    // update local cache
+    if (!statusByPlayer[me]) statusByPlayer[me] = {};
+    for (const r of toApply) statusByPlayer[me][r.sid] = r.status;
+    render();
+    closeUpload();
+    showErr('✓ Applied '+toApply.length+' updates');
+  } catch (e) {
+    showErr('Apply failed: ' + (e.message||e));
+  } finally {
+    writing--;
+    btn.disabled = false; btn.textContent = '✓ Apply changes';
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+PANINI WC2026 — QUICK DEPLOY (read on phone)
+=============================================
+
+STEP 1 — DATABASE (1 min)
+  - supabase.com/dashboard → your project
+  - SQL Editor → New query
+  - Paste schema.sql contents → Run
+  - Should see "Success. No rows returned."
+
+STEP 2 — VERCEL DEPLOY (5 min)
+  Easiest path on phone: use GitHub.
+  - Create a new repo on github.com (private or public)
+  - Upload these 5 files keeping the folder structure:
+      index.html
+      api/extract.js
+      vercel.json
+      schema.sql
+      README.md
+  - Go to vercel.com → Sign in with GitHub
+  - Add New → Project → pick the repo → Deploy
+
+STEP 3 — ADD GEMINI KEY (1 min)
+  - Vercel → your project → Settings → Environment Variables
+  - Name:  GEMINI_API_KEY
+  - Value: (paste your new Gemini key)
+  - Apply to: Production + Preview + Development
+  - Save
+
+STEP 4 — REDEPLOY (30 sec)
+  - Vercel → Deployments tab
+  - Tap ⋯ on the latest deploy → Redeploy
+  - Wait ~30 seconds
+
+DONE. Your URL: https://your-project.vercel.app
+Share with friends.
+
+ADMIN: append /?admin=1 to your URL to rename players.
+
+TROUBLESHOOT:
+  - "GEMINI_API_KEY missing" → set the env var, redeploy
+  - Stickers don't sync live → Supabase → Database → Replication → enable realtime on the 3 tables
+  - Anything else → check README.md
