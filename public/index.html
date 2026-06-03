@@ -286,8 +286,9 @@ body{
 /* Double: blue tint overlay */
 .pcard.status-double.has-img .sfoot{background:rgba(59,130,246,.35)}
 /* Badge card */
+.pcard.is-badge{grid-column:auto}
 .pcard.is-badge.has-img{flex-direction:column}
-.pcard.is-badge.has-img .simg{aspect-ratio:3/4;object-position:center}
+.pcard.is-badge.has-img .simg{aspect-ratio:2/3;object-fit:contain;object-position:center;background:rgba(0,0,0,.2)}
 
 /* inline name edit form */
 .pcard .pedit{position:absolute;bottom:7px;left:8px;background:rgba(168,85,247,.22);color:var(--c-purple);border:none;border-radius:999px;font-size:11px;font-weight:900;cursor:pointer;width:22px;height:22px;display:none;align-items:center;justify-content:center;line-height:1}
