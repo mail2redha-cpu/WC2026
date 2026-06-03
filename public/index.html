@@ -113,92 +113,38 @@ body{
 .album-count{font-size:12px;color:var(--muted);margin-left:8px;white-space:nowrap;font-weight:800}
 .album-select{padding:6px 12px;background:rgba(20,8,30,.9);border:1px solid var(--glass-border);border-radius:999px;color:var(--txt);font-size:11px;cursor:pointer;max-width:150px}
 
-/* page slide animation */
-.album-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:6px 14px 14px}
-@media(min-width:520px){.album-grid{grid-template-columns:repeat(3,1fr)}}
-@media(min-width:820px){.album-grid{grid-template-columns:repeat(4,1fr)}}
-.album-grid.slide-left{animation:slideL .35s ease}
-.album-grid.slide-right{animation:slideR .35s ease}
-@keyframes slideL{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:translateX(0)}}
-@keyframes slideR{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:translateX(0)}}
+/* ── CLEAN COLLECTION GRID ── */
+.album-book{padding:12px 14px 90px;overflow:visible}
+/* Wrapper that fades/slides when navigating countries */
+.coll-grid-wrap{transition:opacity .25s ease,transform .25s ease;opacity:1;transform:translateX(0)}
+.coll-grid-wrap.slide-out-left{opacity:0;transform:translateX(-24px)}
+.coll-grid-wrap.slide-out-right{opacity:0;transform:translateX(24px)}
+/* The uniform sticker grid — perfectly aligned, no orphan stretch */
+.coll-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  align-items:start;
+}
+@media(min-width:430px){.coll-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:720px){.coll-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(min-width:1000px){.coll-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
 
-/* ── ALBUM BOOK SPREAD ── */
-.album-book{padding:10px 10px 80px;overflow:hidden}
-.book-spread{
-  display:flex;gap:0;border-radius:16px;
-  box-shadow:0 24px 70px rgba(0,0,0,.7);
-  overflow:hidden;position:relative;
-  min-height:0;
-}
-.book-left,.book-right{
-  padding:16px 12px;position:relative;overflow:hidden;
-  transition:background .4s ease;
-}
-.book-left{flex:0 0 36%;border-right:none}
-.book-right{flex:1}
-.book-spine{
-  width:8px;background:linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.05) 50%,rgba(0,0,0,.25));
-  flex-shrink:0;position:relative;z-index:2;
-  box-shadow:inset -2px 0 4px rgba(0,0,0,.2),inset 2px 0 4px rgba(0,0,0,.2);
-}
-/* Watermark "2026" on each page */
-.book-left::after,.book-right::after{
-  content:"2026";position:absolute;
-  font-size:140px;font-weight:900;
-  color:rgba(255,255,255,.06);
-  bottom:-20px;right:-10px;
-  pointer-events:none;line-height:1;
-  font-style:italic;letter-spacing:-.02em;
-}
-/* Organic shapes — CSS clip-path blobs */
-.page-blob{
-  position:absolute;border-radius:60% 40% 55% 45% / 50% 60% 40% 50%;
-  pointer-events:none;opacity:.35;
-}
+/* Group chip row under the grid */
+.group-chips{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0 4px;padding:9px 14px;border-radius:14px;background:var(--glass);border:1px solid var(--glass-border)}
+.group-chips .gc-label{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.group-chips .gc-flags{display:flex;gap:8px;flex-wrap:wrap}
+.group-chips .gc-flags .fi{width:26px;height:18px;border-radius:3px}
 
-/* Left page layout */
-.we-are-block{position:relative;z-index:1;margin-bottom:10px}
-.we-are-label{font-size:.65rem;font-weight:900;letter-spacing:.14em;color:rgba(255,255,255,.8);text-transform:uppercase;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
-.we-are-country{font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:.06em;text-shadow:0 2px 12px rgba(0,0,0,.5);line-height:1;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
-.fed-name{font-size:.6rem;color:rgba(255,255,255,.65);margin-top:4px;line-height:1.3}
-/* Left page: 2-col grid for badge + 3 players */
-.left-stickers{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px;position:relative;z-index:1}
-.left-stickers .pcard{min-height:0;width:100%;max-width:none}
-/* Right page: 4-col grid for 8 players + group box */
-.right-grid{
-  display:grid;grid-template-columns:repeat(4,1fr);
-  gap:6px;position:relative;z-index:1;
-}
-.right-grid .pcard{min-height:0;width:100%;max-width:none}
-
-/* Group box inside right grid */
-.group-box{
-  background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);
-  border-radius:10px;padding:6px;text-align:center;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-  grid-column:2/4;grid-row:3/4;
-}
-.group-label{font-size:.65rem;font-weight:900;letter-spacing:.08em;color:rgba(255,255,255,.7);text-transform:uppercase}
-.group-flags{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-top:2px}
-.group-flags .fi{width:20px;height:14px;border-radius:2px}
-/* Group info block below right grid */
-.group-info{position:relative;z-index:1;margin-top:10px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:14px}
-.group-info .gi-label{font-size:1rem;font-weight:900;letter-spacing:.1em;color:#fff;text-transform:uppercase;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
-.group-info .gi-flags{display:flex;gap:8px;flex-wrap:wrap}
-.group-info .gi-flags .fi{width:30px!important;height:21px!important;border-radius:3px}
-
-/* Slot number watermark inside sticker cards */
-.pcard .slot-num{font-size:1.6rem;font-weight:900;color:rgba(255,255,255,.1);position:absolute;top:4px;left:6px;line-height:1;pointer-events:none;z-index:0}
-
-/* Mobile: stack book pages vertically */
-@media(max-width:520px){
-  .book-spread{flex-direction:column;min-height:auto}
-  .book-left{flex:none;border-right:none;border-bottom:1px solid rgba(255,255,255,.1)}
-  .book-right{flex:none}
-  .book-spine{width:100%;height:6px}
-  .left-stickers{grid-template-columns:repeat(4,1fr)}
-  .right-grid{grid-template-columns:repeat(4,1fr)}
-}
+/* ── INLINE NAME EDIT PANEL (floating) ── */
+.name-edit-panel{position:fixed;z-index:700;width:220px;background:rgba(24,10,36,.97);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--glass-border);border-radius:14px;padding:12px;box-shadow:0 18px 50px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:8px;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.name-edit-panel .nep-hdr{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:900;color:var(--c-purple)}
+.name-edit-panel .nep-hdr button{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:13px}
+.name-edit-panel input{width:100%;padding:7px 9px;border-radius:9px;border:1px solid var(--glass-border);background:rgba(255,255,255,.07);color:var(--txt);font-size:12px;outline:none}
+.name-edit-panel .nep-btns{display:flex;gap:7px}
+.name-edit-panel .nep-btns button{flex:1;padding:7px 0;border-radius:9px;border:none;font-size:12px;font-weight:900;cursor:pointer}
+.name-edit-panel .nep-btns button:first-of-type{background:linear-gradient(135deg,var(--c-teal),var(--c-blue));color:#fff}
+.name-edit-panel .nep-btns button:last-of-type{background:rgba(255,255,255,.1);color:var(--muted)}
 
 /* ── MOBILE NAV STRIP ── */
 .mobile-nav-strip{
@@ -221,7 +167,7 @@ body{
 }
 
 /* ── PANINI STICKER CARD ── */
-.pcard{position:relative;border-radius:12px;padding:0;overflow:hidden;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);cursor:pointer;transition:transform .2s,box-shadow .25s,border-color .25s;display:flex;flex-direction:column;min-height:0;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.pcard{position:relative;border-radius:12px;padding:0;overflow:hidden;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);cursor:pointer;transition:transform .2s,box-shadow .25s,border-color .25s;display:flex;flex-direction:column;min-height:0;width:100%;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
 .pcard:hover{transform:translateY(-4px)}
 .pcard .stripe{height:5px;width:100%}
 .pcard .phead{display:flex;align-items:center;gap:8px;padding:9px 11px 7px}
@@ -253,10 +199,10 @@ body{
 .pcard.status-double .stripe{background:linear-gradient(90deg,var(--c-blue),#60a5fa)}
 .pcard.status-double .dot{background:var(--c-blue)}
 .pcard.status-double:hover{box-shadow:0 14px 30px rgba(59,130,246,.3)}
-.pcard.is-badge{grid-column:1/-1;flex-direction:row;align-items:center;min-height:auto;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.35)}
+.pcard.is-badge{flex-direction:column;align-items:center;justify-content:center;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.35)}
 .pcard.is-badge .stripe{display:none}
-.pcard.is-badge .shield{font-size:30px;padding:0 6px 0 12px}
-.pcard.is-badge .pbody{align-items:flex-start;text-align:left;flex:1;padding:12px 10px}
+.pcard.is-badge .shield{font-size:34px;padding:16px 0 4px}
+.pcard.is-badge .pbody{align-items:center;text-align:center;flex:1;padding:6px 10px 14px}
 .pcard.pulse{animation:pulse .3s ease}
 @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
 
@@ -273,7 +219,10 @@ body{
 .pcard-last{display:block;font-size:.82rem;font-weight:900;letter-spacing:.01em;line-height:1.1;word-break:break-word}
 /* ── STICKER PHOTO CARDS ── */
 .pcard.has-img{padding:0;overflow:hidden;min-height:0}
-.pcard.has-img .simg{width:100%;aspect-ratio:2/3;object-fit:cover;object-position:top center;display:block}
+/* skeleton placeholder under image so nothing reflows while loading */
+.pcard.has-img .simg{width:100%;aspect-ratio:2/3;object-fit:cover;object-position:top center;display:block;background:linear-gradient(110deg,rgba(255,255,255,.05) 8%,rgba(255,255,255,.12) 18%,rgba(255,255,255,.05) 33%);background-size:200% 100%;animation:skel 1.3s linear infinite}
+.pcard.has-img .simg.loaded{animation:none;background:rgba(0,0,0,.2)}
+@keyframes skel{from{background-position:200% 0}to{background-position:-200% 0}}
 .pcard.has-img .stripe{height:4px;position:absolute;top:0;left:0;right:0;z-index:3}
 .pcard.has-img .sfoot{display:flex;align-items:center;justify-content:space-between;padding:5px 6px 6px;background:rgba(0,0,0,.72);gap:3px}
 .pcard.has-img .sfoot .pid{font-size:8px;font-weight:900;opacity:.6;letter-spacing:.04em;flex-shrink:0;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
@@ -426,6 +375,20 @@ body{
 .warn-chip{font-size:9px;color:var(--c-gold);font-weight:700;background:rgba(245,158,11,.15);padding:1px 6px;border-radius:999px;letter-spacing:.02em;margin-left:5px}
 .fuzzy-chip{font-size:9px;color:var(--c-purple);font-weight:700;background:rgba(168,85,247,.15);padding:1px 6px;border-radius:999px;letter-spacing:.02em;margin-left:5px}
 .urow input[type=checkbox]{accent-color:var(--c-gold)}
+/* ── SCAN LOG PANEL ── */
+.scanlog{background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:14px;padding:12px;max-height:300px;overflow-y:auto}
+.scanlog-hdr{font-size:14px;font-weight:900;color:#fff;margin-bottom:8px}
+.scanlog-photo{margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.07)}
+.scanlog-photo:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.scanlog-photo-title{font-size:13px;font-weight:800;color:var(--c-gold);margin-bottom:6px}
+.scanlog-line{display:flex;align-items:center;gap:8px;font-size:14px;color:#fff;padding:3px 0;line-height:1.4}
+.scanlog-line .lg-ok{color:var(--c-green);flex:0 0 auto}
+.scanlog-line .lg-warn{color:var(--c-gold);flex:0 0 auto}
+.scanlog-line .lg-corr{font-size:10px;font-weight:800;color:var(--c-purple);background:rgba(168,85,247,.16);padding:1px 7px;border-radius:999px;letter-spacing:.02em}
+.scanlog-unmatched{display:flex;align-items:center;gap:10px;margin:6px 0;padding:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.22);border-radius:10px}
+.scanlog-unmatched img{width:46px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--glass-border);flex:0 0 auto}
+.scanlog-unmatched .lg-txt{font-size:14px;color:#fff;line-height:1.4}
+.scanlog-unmatched .lg-txt b{color:var(--c-gold)}
 </style>
 </head>
 <body>
@@ -486,10 +449,9 @@ body{
     <div class="pfilter" id="collPeopleFilter"></div>
 
     <div class="album-book" id="albumGrid">
-      <div class="book-spread" id="bookSpread">
-        <div class="book-left" id="bookLeft"></div>
-        <div class="book-spine"></div>
-        <div class="book-right" id="bookRight"></div>
+      <div class="coll-grid-wrap" id="collGridWrap">
+        <div class="coll-grid" id="collGrid"></div>
+        <div id="collGroupChips"></div>
       </div>
     </div>
 
@@ -538,6 +500,7 @@ body{
     <button class="uploadBtn" style="width:100%;padding:13px" onclick="document.getElementById('uploadFile').click()">📎 Choose photos</button>
     <div id="uploadThumbs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
     <div id="uploadStatus" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+    <div id="scanLog" style="margin-top:12px;display:none"></div>
     <div id="uploadResults" style="margin-top:12px;display:none">
       <div id="uploadResultsHeader" style="font-size:14px;color:#fff;font-weight:700;margin-bottom:8px">Review before applying:</div>
       <div id="uploadResultsList" style="max-height:340px;overflow-y:auto;background:rgba(255,255,255,.04);border-radius:14px;padding:12px;font-size:14px"></div>
@@ -1128,14 +1091,7 @@ function renderAlbumTab(slideDir){
   const asel=document.getElementById('albumCountrySelect'); if(asel) asel.value=albumCountryIdx;
   const mctry=document.getElementById('mobileNavCtry'); if(mctry) mctry.textContent=ctry;
 
-  // Page background colors from country gradient
-  const grad=countryGradient(ctry);
-  const hexes=grad.match(/#[0-9a-fA-F]{6}/g)||['#6366f1','#a855f7'];
-  const c1=hexes[0], c2=hexes[hexes.length-1];
-  // Stronger country-color page backgrounds
-  const pageBg=c1+'38', blob1=c1+'70', blob2=c2+'55';
-
-  // Build one sticker card's HTML
+  // Build one sticker card's HTML — uniform, fixed aspect-ratio, no reflow
   function card(s){
     const st=statusOf(me,s.id);
     const isHave=st==='have', isDbl=st==='double';
@@ -1147,10 +1103,10 @@ function renderAlbumTab(slideDir){
     const displayName=s.first?`${escapeHtml(s.first)} ${escapeHtml(s.last)}`:escapeHtml(s.last);
 
     if(hasImg){
-      // Real sticker photo card
+      // Real sticker photo card — image carries skeleton bg until loaded
       return `<div class="${cls}" data-sid="${s.id}" data-num="${num}" onclick="cycleStatus('${s.id}')">
         <div class="stripe"></div>
-        <img class="simg" src="${img}" alt="${displayName}" loading="lazy">
+        <img class="simg" src="${img}" alt="${displayName}" loading="lazy" onload="this.classList.add('loaded')">
         <div class="sfoot">
           <span class="pid">${s.id}</span>
           <span class="sname">${displayName}</span>
@@ -1186,70 +1142,41 @@ function renderAlbumTab(slideDir){
     </div>`;
   }
 
-  // Group info box
+  // Single uniform grid: badge first, then players 1–11
+  const ordered=[...(badge?[badge]:[]), ...pl];
+  const gridHtml=ordered.map(card).join('');
+
+  // Group chip row
   const groupTeams=getGroupTeams(ctry);
-  const groupHtml=`<div class="group-info">
-    <div class="gi-label">GROUP</div>
-    <div class="gi-flags">${groupTeams.map(t=>`<span class="fi fi-${isoFlag(t)||'un'}" title="${escapeHtml(t)}" style="width:22px;height:15px;border-radius:2px;display:inline-block;margin:1px"></span>`).join('')}</div>
+  const groupHtml=`<div class="group-chips">
+    <span class="gc-label">Group</span>
+    <div class="gc-flags">${groupTeams.map(t=>`<span class="fi fi-${isoFlag(t)||'un'}" title="${escapeHtml(t)}"></span>`).join('')}</div>
   </div>`;
 
-  // LEFT PAGE: WE ARE block + badge + P1-P3 (2×2 grid = 4 cells)
-  const leftP=pl.slice(0,3);
-  const leftHtml=`
-    <div class="page-blob" style="width:130px;height:130px;background:${blob1};top:-30px;right:-20px;opacity:.55"></div>
-    <div class="page-blob" style="width:90px;height:90px;background:${blob2};bottom:40px;left:-15px;opacity:.45"></div>
-    <div class="we-are-block">
-      <div class="we-are-label">WE ARE</div>
-      <div class="we-are-name">${escapeHtml(ctry.toUpperCase())}</div>
-      <div class="we-are-fed">${escapeHtml(ctry)} National Team</div>
-    </div>
-    <div class="left-stickers">
-      ${badge?card(badge):''}
-      ${leftP.map(s=>card(s)).join('')}
-    </div>`;
-
-  // RIGHT PAGE: P4–P11 (8 players) in 4-col × 2 rows + group box row
-  const rightP=pl.slice(3);
-  const rightHtml=`
-    <div class="page-blob" style="width:150px;height:150px;background:${blob1};bottom:-35px;right:-25px;opacity:.4"></div>
-    <div class="right-grid">
-      ${rightP.map(s=>card(s)).join('')}
-    </div>
-    ${groupHtml}`;
-
-  // Apply to DOM with slide animation
-  const bookLeft=document.getElementById('bookLeft');
-  const bookRight=document.getElementById('bookRight');
-  const spread=document.getElementById('bookSpread');
-  if(!bookLeft||!bookRight||!spread) return;
+  const grid=document.getElementById('collGrid');
+  const chips=document.getElementById('collGroupChips');
+  const wrap=document.getElementById('collGridWrap');
+  if(!grid||!wrap) return;
 
   function applyContent(){
-    bookLeft.style.background=pageBg;
-    bookRight.style.background=pageBg;
-    bookLeft.innerHTML=leftHtml;
-    bookRight.innerHTML=rightHtml;
+    grid.innerHTML=gridHtml;
+    if(chips) chips.innerHTML=groupHtml;
   }
 
   if(slideDir){
-    spread.style.transition='opacity .2s,transform .2s';
-    spread.style.opacity='0';
-    spread.style.transform=slideDir==='left'?'translateX(28px)':'translateX(-28px)';
+    wrap.classList.add(slideDir==='left'?'slide-out-left':'slide-out-right');
     setTimeout(()=>{
       applyContent();
-      spread.style.transition='none';
-      spread.style.transform=slideDir==='left'?'translateX(-20px)':'translateX(20px)';
-      spread.style.opacity='0';
+      // jump to opposite side then settle for a smooth incoming slide
+      wrap.classList.remove('slide-out-left','slide-out-right');
+      wrap.classList.add(slideDir==='left'?'slide-out-right':'slide-out-left');
       requestAnimationFrame(()=>{
-        spread.style.transition='opacity .25s,transform .25s';
-        spread.style.transform='translateX(0)';
-        spread.style.opacity='1';
+        wrap.classList.remove('slide-out-left','slide-out-right');
       });
-    },200);
+    },220);
   } else {
     applyContent();
-    spread.style.transition='';
-    spread.style.opacity='1';
-    spread.style.transform='translateX(0)';
+    wrap.classList.remove('slide-out-left','slide-out-right');
   }
 
   const editBtn=document.getElementById('albumEditBtn');
@@ -1410,6 +1337,7 @@ function openUpload(mode){
   document.getElementById('detectedCountry').style.display='none';
   document.getElementById('uploadStatus').textContent='';
   document.getElementById('uploadResults').style.display='none';
+  const sl=document.getElementById('scanLog'); if(sl){sl.style.display='none';sl.innerHTML='';}
   document.getElementById('uploadThumbs').innerHTML='';
   document.getElementById('uploadFile').value='';
   document.getElementById('uploadFile').multiple=(mode!=='album');
@@ -1482,14 +1410,18 @@ function matchSticker(country,last,first){
       pool.find(s=>normalize(s.first||'')===normLast||normalize(s.first||'')===normFirst);
     if (m) return {...m,fuzzy:false};
   }
+  // Substring containment (handles compound / partial OCR names) before edit distance
+  let contain=pool.find(s=>{const sl=normalize(s.last);return sl.length>=4&&(sl.includes(normLast)||normLast.includes(sl));});
+  if (contain) return {...contain,fuzzy:true,corrected:true};
   let best=null,bestDist=Infinity;
   const query2=normFirst?normLast+' '+normFirst:normLast;
   for (const s of pool){
     const d=Math.min(editDistance(normLast,normalize(s.last)),editDistance(query2,normalize(s.last)+' '+normalize(s.first||'')));
     if (d<bestDist){bestDist=d;best=s;}
   }
-  const threshold=Math.max(2,Math.floor(normLast.length*0.4));
-  if (best&&bestDist<=threshold) return {...best,fuzzy:true};
+  // Snap to the official entry only when reasonably close (<=35% of name length, min 1, max 3)
+  const threshold=Math.min(3,Math.max(1,Math.round(normLast.length*0.35)));
+  if (best&&bestDist<=threshold) return {...best,fuzzy:true,corrected:true};
   return null;
 }
 
@@ -1499,6 +1431,7 @@ async function onFilesPicked(event){
   const status=document.getElementById('uploadStatus');
   const thumbs=document.getElementById('uploadThumbs');
   document.getElementById('uploadResults').style.display='none';
+  const sl=document.getElementById('scanLog'); if(sl){sl.style.display='none';sl.innerHTML='';}
   thumbs.innerHTML='';
   for (const file of files){
     const url=URL.createObjectURL(file);
@@ -1516,7 +1449,7 @@ async function onFilesPicked(event){
     try{prepared=await resizeImage(files[i]);}catch(e){errors++;continue;}
     let result;
     try{result=await callExtract(prepared,apiMode);}catch(e){errors++;status.textContent=`✗ Photo ${i+1}: ${e.message}`;continue;}
-    if (result.stickers&&result.stickers.length>0) allResults.push(result);
+    if (result.stickers&&result.stickers.length>0){ result.dataUrl=prepared.dataUrl; result.photoIdx=i+1; allResults.push(result); }
   }
   if (allResults.length===0){
     status.textContent=`✗ Nothing detected.${errors?' Some photos failed — try clearer images.':' Try a clearer photo.'}`;
@@ -1530,6 +1463,7 @@ async function onFilesPicked(event){
       document.getElementById('detectedCountryName').innerHTML=flagSpan(r.country,(SEED.find(s=>s.country===r.country)||{}).flag||'')+' '+escapeHtml(r.country);
       document.getElementById('detectedCountry').style.display='block';
     }
+    renderScanLog(allResults);
     renderAlbumResults(r);
   } else if (uploadMode==='batch'){
     renderBatchResults(allResults);
@@ -1550,7 +1484,40 @@ function renderAlbumResults(result){
   renderResolvedList(resolved);
 }
 
+// Visible log of what each photo produced — matched (with official name) or unmatched (with thumbnail)
+function renderScanLog(allResults){
+  const root=document.getElementById('scanLog');
+  if(!root) return;
+  let h='<div class="scanlog"><div class="scanlog-hdr">📋 Scan log</div>';
+  for(const result of allResults){
+    h+=`<div class="scanlog-photo"><div class="scanlog-photo-title">Photo ${result.photoIdx||''}${result.country?' · '+escapeHtml(result.country):''} — ${result.stickers.length} detected</div>`;
+    for(const row of result.stickers){
+      if(typeof row.slot!=='undefined'){
+        // album mode: slot-based
+        const ctry=result.country;
+        const match=SEED.find(s=>s.country===ctry&&s.id.split('-')[1]===String(row.slot));
+        if(match) h+=`<div class="scanlog-line"><span class="lg-ok">✓</span><span>${escapeHtml(match.id)} ${escapeHtml(match.last||'BADGE')} · <b>${escapeHtml(row.status)}</b></span></div>`;
+        else h+=`<div class="scanlog-line"><span class="lg-warn">⚠</span><span>slot ${escapeHtml(String(row.slot))} — not in roster</span></div>`;
+        continue;
+      }
+      const last=(row.last||'').toUpperCase();
+      const match=matchSticker(row.country,last,row.first);
+      if(match){
+        const corr=match.corrected?`<span class="lg-corr">corrected → ${escapeHtml(match.last)}</span>`:'';
+        h+=`<div class="scanlog-line"><span class="lg-ok">✓</span><span>${escapeHtml(last||'?')}${match.first?' ('+escapeHtml(match.first)+')':''} → ${escapeHtml(match.id)} ${escapeHtml(match.last)}</span>${corr}</div>`;
+      } else {
+        h+=`<div class="scanlog-unmatched">${result.dataUrl?`<img src="${result.dataUrl}" alt="unmatched">`:''}<div class="lg-txt"><b>⚠ unmatched</b><br>"${escapeHtml(row.last||'?')}" · ${escapeHtml(row.country||'?')}</div></div>`;
+      }
+    }
+    h+='</div>';
+  }
+  h+='</div>';
+  root.innerHTML=h;
+  root.style.display='block';
+}
+
 function renderBatchResults(allResults){
+  renderScanLog(allResults);
   const byId={},unmatched=[];
   for (const result of allResults){
     for (const row of result.stickers){
@@ -1583,6 +1550,7 @@ function renderBatchResults(allResults){
 }
 
 function renderOverrideResults(allResults){
+  renderScanLog(allResults);
   const byId={},unmatched=[];
   for (const result of allResults){
     for (const row of result.stickers){
@@ -1618,7 +1586,7 @@ function renderResolvedList(resolved,append=false){
     const badgeCls=r.warn?'b-warn':(r.matched?'b-'+r.status:'b-unmatched');
     const statusLabel=r.status==='have'?'⭐ HAVE':r.status.toUpperCase();
     const warnChip=r.warn?`<span class="warn-chip">⚠ ${escapeHtml(r.warn)}</span>`:'';
-    const fuzzyChip=r.fuzzy?`<span class="fuzzy-chip">~ close match</span>`:'';
+    const fuzzyChip=r.fuzzy?`<span class="fuzzy-chip">matched (corrected)</span>`:'';
     h+=`<div class="urow${r.warn?' urow-warn':''}">
       <input type="checkbox" id="urow_${i}" ${r.checked?'checked':''} ${r.matched?'':'disabled'} onchange="lastExtraction[${i}].checked=this.checked">
       <span class="badge ${badgeCls}">${statusLabel}</span>
