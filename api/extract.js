@@ -73,7 +73,6 @@ export default async function handler(req) {
   const anthropicBody = {
     model: MODEL,
     max_tokens: 4096,
-    temperature: 0,
     // Stable instructions in a cached system block -> repeated scans are cheaper.
     system: [
       { type: 'text', text: systemText, cache_control: { type: 'ephemeral' } }
