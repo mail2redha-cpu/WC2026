@@ -132,6 +132,7 @@ main{padding:12px 14px;max-width:1200px;margin:0 auto}
 .urow .b-warn{background:rgba(245,158,11,.25);color:var(--gold)}
 .urow-warn{background:rgba(245,158,11,.06) !important;border:1px solid rgba(245,158,11,.18)}
 .warn-chip{font-size:9px;color:var(--gold);font-weight:700;background:rgba(245,158,11,.15);padding:1px 5px;border-radius:3px;letter-spacing:.03em;margin-left:4px}
+.fuzzy-chip{font-size:9px;color:var(--purple);font-weight:700;background:rgba(168,85,247,.15);padding:1px 5px;border-radius:3px;letter-spacing:.03em;margin-left:4px}
 .urow input[type=checkbox]{accent-color:var(--gold)}
 </style>
 </head>
@@ -850,10 +851,53 @@ async function callExtract(prepared, apiMode){
   return resp.json();
 }
 
-function matchSticker(country, last){
+// Strip accents/diacritics and upper-case for accent-insensitive comparison
+function normalize(s){
+  return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,' ').replace(/\s+/g,' ').trim();
+}
+
+function editDistance(a,b){
+  const m=a.length,n=b.length,dp=[];
+  for(let i=0;i<=m;i++){dp[i]=[];for(let j=0;j<=n;j++)dp[i][j]=i===0?j:j===0?i:0;}
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function matchSticker(country, last, first){
   if (!country || !last) return null;
-  if (last==='BADGE') return SEED.find(s=>s.country===country && s.last==='BADGE')||null;
-  return SEED.find(s=>s.country===country && s.last===last)||null;
+  const normLast = normalize(last);
+  if (normLast==='BADGE') return SEED.find(s=>s.country===country && s.last==='BADGE')||null;
+
+  const pool = SEED.filter(s=>s.country===country);
+  if (!pool.length) return null;
+
+  // 1. Exact normalized match on last name
+  let m = pool.find(s=>normalize(s.last)===normLast);
+  if (m) return {...m, fuzzy:false};
+
+  // 2. Try swapped or partial: detected "last" might actually be first, or vice-versa
+  const normFirst = normalize(first||'');
+  if (normFirst){
+    m = pool.find(s=>normalize(s.last)===normFirst) ||
+        pool.find(s=>normalize(s.first||'')===normLast || normalize(s.first||'')===normFirst);
+    if (m) return {...m, fuzzy:false};
+  }
+
+  // 3. Fuzzy: closest edit distance within the same country
+  let best=null, bestDist=Infinity;
+  const query = normFirst ? normLast+' '+normFirst : normLast;
+  for (const s of pool){
+    const d = Math.min(
+      editDistance(normLast, normalize(s.last)),
+      editDistance(query, normalize(s.last)+' '+normalize(s.first||''))
+    );
+    if (d<bestDist){bestDist=d; best=s;}
+  }
+  // Accept if edit distance ≤ 40% of the query length (min threshold: 2)
+  const threshold = Math.max(2, Math.floor(normLast.length*0.4));
+  if (best && bestDist<=threshold) return {...best, fuzzy:true};
+  return null;
 }
 
 async function onFilesPicked(event){
@@ -930,7 +974,7 @@ function renderBatchResults(allResults){
   for (const result of allResults){
     for (const row of result.stickers){
       const last = (row.last||'').toUpperCase();
-      const match = matchSticker(row.country, last);
+      const match = matchSticker(row.country, last, row.first);
       if (match){
         // 'have' (star) takes priority if sticker appears in multiple photos
         if (!byId[match.id] || row.status==='have') byId[match.id] = { match, status:row.status };
@@ -949,7 +993,7 @@ function renderBatchResults(allResults){
       warn = cur==='have' ? 'already have — check' : 'not in missing list';
     if (status==='double' && cur==='double')
       warn = 'already in doubles — confirm';
-    resolved.push({ sid:match.id, status, label:`${match.id} ${match.last}${match.first?' ('+match.first+')':''} · ${match.country}`, matched:true, checked:!warn, warn });
+    resolved.push({ sid:match.id, status, label:`${match.id} ${match.last}${match.first?' ('+match.first+')':''} · ${match.country}`, matched:true, checked:!warn, warn, fuzzy:!!match.fuzzy });
   }
   for (const u of unmatched)
     resolved.push({ sid:null, status:'double', label:`${u.country||'?'} ${u.last||'?'} — no match`, matched:false, checked:false, warn:null });
@@ -970,7 +1014,7 @@ function renderOverrideResults(allResults){
   for (const result of allResults){
     for (const row of result.stickers){
       const last = (row.last||'').toUpperCase();
-      const match = matchSticker(row.country, last);
+      const match = matchSticker(row.country, last, row.first);
       if (match){ if(!byId[match.id]) byId[match.id]=match; }
       else { const key=`${row.country}|${last}`; if(!unmatched.find(u=>u.key===key)) unmatched.push({key,country:row.country,last}); }
     }
@@ -981,7 +1025,7 @@ function renderOverrideResults(allResults){
 
   const resolved = [];
   for (const match of Object.values(byId))
-    resolved.push({ sid:match.id, status:'double', label:`${match.id} ${match.last}${match.first?' ('+match.first+')':''} · ${match.country}`, matched:true, checked:true, warn:null });
+    resolved.push({ sid:match.id, status:'double', label:`${match.id} ${match.last}${match.first?' ('+match.first+')':''} · ${match.country}`, matched:true, checked:true, warn:null, fuzzy:!!match.fuzzy });
   for (const u of unmatched)
     resolved.push({ sid:null, status:'double', label:`${u.country||'?'} ${u.last||'?'} — no match`, matched:false, checked:false, warn:null });
   resolved.sort((a,b)=>a.label.localeCompare(b.label));
@@ -1003,11 +1047,12 @@ function renderResolvedList(resolved, append=false){
   resolved.forEach((r,i) => {
     const badgeCls = r.warn ? 'b-warn' : (r.matched ? 'b-'+r.status : 'b-unmatched');
     const statusLabel = r.status==='have' ? '⭐ HAVE' : r.status.toUpperCase();
-    const warnChip = r.warn ? `<span class="warn-chip">⚠ ${escapeHtml(r.warn)}</span>` : '';
+    const warnChip  = r.warn  ? `<span class="warn-chip">⚠ ${escapeHtml(r.warn)}</span>` : '';
+    const fuzzyChip = r.fuzzy ? `<span class="fuzzy-chip">~ close match</span>` : '';
     h += `<div class="urow${r.warn?' urow-warn':''}">
       <input type="checkbox" id="urow_${i}" ${r.checked?'checked':''} ${r.matched?'':'disabled'} onchange="lastExtraction[${i}].checked=this.checked">
       <span class="badge ${badgeCls}">${statusLabel}</span>
-      <span style="flex:1;color:${r.matched?'var(--txt)':'var(--muted)'}">${escapeHtml(r.label)}${warnChip}</span>
+      <span style="flex:1;color:${r.matched?'var(--txt)':'var(--muted)'}">${escapeHtml(r.label)}${warnChip}${fuzzyChip}</span>
     </div>`;
   });
   const list = document.getElementById('uploadResultsList');
