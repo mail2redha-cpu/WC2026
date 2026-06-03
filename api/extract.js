@@ -83,12 +83,10 @@ export default async function handler(req) {
         content: [
           { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } },
           { type: 'text', text: mode === 'album'
-              ? 'Read this album page and return the JSON described.'
-              : 'Read these stickers and return the JSON described.' }
+              ? 'Read this album page and return ONLY the JSON described — start your reply with { and output nothing else.'
+              : 'Read these stickers and return ONLY the JSON described — start your reply with { and output nothing else.' }
         ]
-      },
-      // Prefill the assistant turn with "{" to force JSON output.
-      { role: 'assistant', content: '{' }
+      }
     ]
   };
 
@@ -113,15 +111,34 @@ export default async function handler(req) {
   }
 
   const json = await resp.json();
-  // Concatenate text blocks; prepend the "{" prefill that the API does not echo back.
   const out = Array.isArray(json?.content)
     ? json.content.filter(b => b.type === 'text').map(b => b.text).join('')
     : '';
-  const text = '{' + out;
+
+  // Extract the first balanced {...} JSON object from the model's text.
+  function extractJson(s) {
+    const start = s.indexOf('{');
+    if (start < 0) return null;
+    let depth = 0, inStr = false, esc = false;
+    for (let i = start; i < s.length; i++) {
+      const c = s[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (c === '\\') esc = true;
+        else if (c === '"') inStr = false;
+      } else {
+        if (c === '"') inStr = true;
+        else if (c === '{') depth++;
+        else if (c === '}') { depth--; if (depth === 0) return s.slice(start, i + 1); }
+      }
+    }
+    return null;
+  }
+  const text = extractJson(out) || out;
 
   let parsed;
   try { parsed = JSON.parse(text); }
-  catch (e) { return j({ error: 'Claude returned non-JSON', raw: text.slice(0, 500) }, 502); }
+  catch (e) { return j({ error: 'Claude returned non-JSON', raw: out.slice(0, 500) }, 502); }
 
   const stickers = Array.isArray(parsed?.stickers) ? parsed.stickers : [];
   const cleaned = stickers
