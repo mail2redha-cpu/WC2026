@@ -126,15 +126,15 @@ body{
 .album-book{padding:10px 10px 80px;overflow:hidden}
 .book-spread{
   display:flex;gap:0;border-radius:16px;
-  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  box-shadow:0 24px 70px rgba(0,0,0,.7);
   overflow:hidden;position:relative;
-  min-height:380px;
+  min-height:0;
 }
 .book-left,.book-right{
-  padding:18px 14px;position:relative;overflow:hidden;
+  padding:16px 12px;position:relative;overflow:hidden;
   transition:background .4s ease;
 }
-.book-left{flex:0 0 38%;border-right:none}
+.book-left{flex:0 0 36%;border-right:none}
 .book-right{flex:1}
 .book-spine{
   width:8px;background:linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.05) 50%,rgba(0,0,0,.25));
@@ -158,18 +158,18 @@ body{
 
 /* Left page layout */
 .we-are-block{position:relative;z-index:1;margin-bottom:10px}
-.we-are-label{font-size:.65rem;font-weight:900;letter-spacing:.14em;color:rgba(255,255,255,.7);text-transform:uppercase}
-.we-are-country{font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:.04em;text-shadow:0 2px 8px rgba(0,0,0,.4);line-height:1}
-.fed-name{font-size:.6rem;color:rgba(255,255,255,.6);margin-top:4px;line-height:1.3}
-.left-stickers{display:flex;flex-direction:column;gap:8px;margin-top:8px;position:relative;z-index:1}
-
-/* Right page: 3-col sticker grid */
-.left-stickers .pcard,.right-grid .pcard{width:100%;max-width:120px}
+.we-are-label{font-size:.65rem;font-weight:900;letter-spacing:.14em;color:rgba(255,255,255,.8);text-transform:uppercase;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.we-are-country{font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:.06em;text-shadow:0 2px 12px rgba(0,0,0,.5);line-height:1;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.fed-name{font-size:.6rem;color:rgba(255,255,255,.65);margin-top:4px;line-height:1.3}
+/* Left page: 2-col grid for badge + 3 players */
+.left-stickers{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px;position:relative;z-index:1}
+.left-stickers .pcard{min-height:0;width:100%;max-width:none}
+/* Right page: 4-col grid for 8 players + group box */
 .right-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  gap:7px;position:relative;z-index:1;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:6px;position:relative;z-index:1;
 }
-.right-grid .pcard{min-height:0}
+.right-grid .pcard{min-height:0;width:100%;max-width:none}
 
 /* Group box inside right grid */
 .group-box{
@@ -181,6 +181,11 @@ body{
 .group-label{font-size:.65rem;font-weight:900;letter-spacing:.08em;color:rgba(255,255,255,.7);text-transform:uppercase}
 .group-flags{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-top:2px}
 .group-flags .fi{width:20px;height:14px;border-radius:2px}
+/* Group info block below right grid */
+.group-info{position:relative;z-index:1;margin-top:10px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:14px}
+.group-info .gi-label{font-size:1rem;font-weight:900;letter-spacing:.1em;color:#fff;text-transform:uppercase;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.group-info .gi-flags{display:flex;gap:8px;flex-wrap:wrap}
+.group-info .gi-flags .fi{width:30px!important;height:21px!important;border-radius:3px}
 
 /* Slot number watermark inside sticker cards */
 .pcard .slot-num{font-size:1.6rem;font-weight:900;color:rgba(255,255,255,.1);position:absolute;top:4px;left:6px;line-height:1;pointer-events:none;z-index:0}
@@ -191,27 +196,28 @@ body{
   .book-left{flex:none;border-right:none;border-bottom:1px solid rgba(255,255,255,.1)}
   .book-right{flex:none}
   .book-spine{width:100%;height:6px}
-  .left-stickers{flex-direction:row}
+  .left-stickers{grid-template-columns:repeat(4,1fr)}
+  .right-grid{grid-template-columns:repeat(4,1fr)}
 }
 
 /* ── MOBILE NAV STRIP ── */
 .mobile-nav-strip{
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;
-  background:rgba(13,0,21,.95);backdrop-filter:blur(16px);
-  border-top:2px solid rgba(168,85,247,.25);
-  padding:12px 18px 16px;align-items:center;justify-content:space-between;gap:10px;
+  background:rgba(13,0,21,.96);backdrop-filter:blur(18px);
+  border-top:2px solid rgba(168,85,247,.3);
+  padding:16px 18px 20px;align-items:center;justify-content:space-between;gap:12px;
 }
 .mnav-btn{
   background:linear-gradient(135deg,var(--c-purple),var(--c-pink));
-  border:none;color:#fff;font-size:1rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;
-  padding:14px 28px;border-radius:999px;cursor:pointer;min-width:100px;
-  box-shadow:0 6px 20px rgba(168,85,247,.5);
+  border:none;color:#fff;font-size:1.15rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;
+  padding:18px 34px;border-radius:999px;cursor:pointer;min-width:120px;
+  box-shadow:0 8px 26px rgba(168,85,247,.55);
   font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif;
 }
-.mnav-ctry{font-size:1rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--txt);text-align:center;flex:1;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.mnav-ctry{font-size:1.15rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--txt);text-align:center;flex:1;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
 @media(max-width:640px){
   .mobile-nav-strip{display:flex}
-  .album-book{padding-bottom:90px}
+  .album-book{padding-bottom:110px}
 }
 
 /* ── PANINI STICKER CARD ── */
@@ -407,8 +413,9 @@ body{
 .uploadBtn{padding:8px 14px;border-radius:999px;border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.15);color:var(--c-gold);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:.02em;transition:transform .15s}
 .uploadBtn:hover{transform:translateY(-1px);background:rgba(245,158,11,.25)}
 .field-inp{width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-size:12px;outline:none}
-.urow{display:flex;gap:7px;align-items:center;padding:6px 8px;border-radius:10px;margin-bottom:4px;background:rgba(255,255,255,.04)}
-.urow .badge{font-size:9px;font-weight:900;padding:2px 7px;border-radius:999px;letter-spacing:.04em}
+.urow{display:flex;gap:9px;align-items:center;padding:9px 11px;border-radius:10px;margin-bottom:5px;background:rgba(255,255,255,.07)}
+.urow .badge{font-size:10px;font-weight:900;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
+.urow .ulabel{flex:1;color:#fff;font-size:14px;font-weight:700}
 .urow .b-have{background:rgba(16,185,129,.2);color:var(--c-green)}
 .urow .b-double{background:rgba(59,130,246,.2);color:var(--c-blue)}
 .urow .b-missing{background:rgba(239,68,68,.2);color:var(--c-red)}
@@ -531,8 +538,8 @@ body{
     <div id="uploadThumbs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
     <div id="uploadStatus" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
     <div id="uploadResults" style="margin-top:12px;display:none">
-      <div id="uploadResultsHeader" style="font-size:12px;color:var(--muted);margin-bottom:6px">Review before applying:</div>
-      <div id="uploadResultsList" style="max-height:300px;overflow-y:auto;background:rgba(255,255,255,.04);border-radius:14px;padding:10px;font-size:12px"></div>
+      <div id="uploadResultsHeader" style="font-size:14px;color:#fff;font-weight:700;margin-bottom:8px">Review before applying:</div>
+      <div id="uploadResultsList" style="max-height:340px;overflow-y:auto;background:rgba(255,255,255,.04);border-radius:14px;padding:12px;font-size:14px"></div>
       <div style="margin-top:10px;display:flex;gap:8px">
         <button class="uploadBtn" style="flex:1" id="applyBtn" onclick="applyExtraction()">✓ Apply</button>
         <button class="uploadBtn" style="background:transparent;border:1px solid var(--glass-border);color:var(--muted)" onclick="closeUpload()">Cancel</button>
@@ -1124,7 +1131,8 @@ function renderAlbumTab(slideDir){
   const grad=countryGradient(ctry);
   const hexes=grad.match(/#[0-9a-fA-F]{6}/g)||['#6366f1','#a855f7'];
   const c1=hexes[0], c2=hexes[hexes.length-1];
-  const pageBg=c1+'20', blob1=c1+'50', blob2=c2+'38';
+  // Stronger country-color page backgrounds
+  const pageBg=c1+'38', blob1=c1+'70', blob2=c2+'55';
 
   // Build one sticker card's HTML
   function card(s){
@@ -1184,11 +1192,11 @@ function renderAlbumTab(slideDir){
     <div class="gi-flags">${groupTeams.map(t=>`<span class="fi fi-${isoFlag(t)||'un'}" title="${escapeHtml(t)}" style="width:22px;height:15px;border-radius:2px;display:inline-block;margin:1px"></span>`).join('')}</div>
   </div>`;
 
-  // LEFT PAGE: WE ARE block + badge + P1 + P2
-  const leftP=pl.slice(0,2);
+  // LEFT PAGE: WE ARE block + badge + P1-P3 (2×2 grid = 4 cells)
+  const leftP=pl.slice(0,3);
   const leftHtml=`
-    <div class="page-blob" style="width:110px;height:110px;background:${blob1};top:-25px;right:-18px;opacity:.5"></div>
-    <div class="page-blob" style="width:75px;height:75px;background:${blob2};bottom:55px;left:-12px;opacity:.4"></div>
+    <div class="page-blob" style="width:130px;height:130px;background:${blob1};top:-30px;right:-20px;opacity:.55"></div>
+    <div class="page-blob" style="width:90px;height:90px;background:${blob2};bottom:40px;left:-15px;opacity:.45"></div>
     <div class="we-are-block">
       <div class="we-are-label">WE ARE</div>
       <div class="we-are-name">${escapeHtml(ctry.toUpperCase())}</div>
@@ -1199,8 +1207,8 @@ function renderAlbumTab(slideDir){
       ${leftP.map(s=>card(s)).join('')}
     </div>`;
 
-  // RIGHT PAGE: P3–P11 (9 players) in 3×3 + group box absolute overlay
-  const rightP=pl.slice(2);
+  // RIGHT PAGE: P4–P11 (8 players) in 4-col × 2 rows + group box row
+  const rightP=pl.slice(3);
   const rightHtml=`
     <div class="page-blob" style="width:150px;height:150px;background:${blob1};bottom:-35px;right:-25px;opacity:.4"></div>
     <div class="right-grid">
@@ -1613,7 +1621,7 @@ function renderResolvedList(resolved,append=false){
     h+=`<div class="urow${r.warn?' urow-warn':''}">
       <input type="checkbox" id="urow_${i}" ${r.checked?'checked':''} ${r.matched?'':'disabled'} onchange="lastExtraction[${i}].checked=this.checked">
       <span class="badge ${badgeCls}">${statusLabel}</span>
-      <span style="flex:1;color:${r.matched?'var(--txt)':'var(--muted)'}">${escapeHtml(r.label)}${warnChip}${fuzzyChip}</span>
+      <span class="ulabel" style="color:${r.matched?'#fff':'rgba(255,255,255,.6)'}">${escapeHtml(r.label)}${warnChip}${fuzzyChip}</span>
     </div>`;
   });
   const list=document.getElementById('uploadResultsList');
