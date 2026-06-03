@@ -92,8 +92,11 @@ body{
 .topnav .nav-pill:hover{color:var(--txt);transform:translateY(-1px)}
 .topnav .nav-pill.on{color:#fff;border-color:transparent;box-shadow:0 10px 28px rgba(168,85,247,.4);transform:translateY(-1px)}
 .topnav .nav-pill#nav-collection.on{background:linear-gradient(135deg,var(--c-purple),var(--c-pink))}
+.topnav .nav-pill#nav-doubles.on{background:linear-gradient(135deg,var(--c-blue),#60a5fa)}
+.topnav .nav-pill#nav-missing.on{background:linear-gradient(135deg,var(--c-red),#f87171)}
 .topnav .nav-pill#nav-swaps.on{background:linear-gradient(135deg,var(--c-teal),var(--c-blue))}
 .topnav .nav-pill#nav-stats.on{background:linear-gradient(135deg,var(--c-gold),var(--c-orange))}
+.topnav{flex-wrap:wrap}
 
 /* ── TAB VIEWS w/ transition ── */
 .tab-view{display:none;opacity:0;transform:translateY(12px);transition:opacity .3s ease,transform .3s ease}
@@ -358,7 +361,17 @@ body{
 @media(max-width:520px){.sr-meta{display:none}}
 
 /* ── UPLOAD MODAL ── */
+/* List tabs (My Doubles / My Missing) */
+.listtab-head{padding:14px 16px 6px}
+.listtab-title{font-size:18px;font-weight:900;letter-spacing:.04em;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.listtab-count{font-size:13px;color:var(--muted);font-weight:700;margin-left:6px}
+.listtab-sub{font-size:12px;color:var(--muted);margin-top:3px}
+#doublesGrid,#missingGrid{padding:6px 14px 80px}
+.listtab-empty{text-align:center;color:var(--muted);font-size:14px;padding:40px 20px}
+.pcard .pctry{position:absolute;top:6px;left:6px;z-index:4;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:999px}
+.pcard .pctry .fi{width:18px;height:13px;border-radius:2px}
 .modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);z-index:500;align-items:center;justify-content:center;padding:14px}
+.modal-wrap.modal-top{align-items:flex-start;padding-top:80px}
 .modal-card{background:rgba(24,10,36,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:24px;padding:20px;width:100%;max-height:90vh;overflow-y:auto}
 .uploadBtn{padding:8px 14px;border-radius:999px;border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.15);color:var(--c-gold);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:.02em;transition:transform .15s}
 .uploadBtn:hover{transform:translateY(-1px);background:rgba(245,158,11,.25)}
@@ -420,6 +433,8 @@ body{
     </div>
     <div class="topnav">
       <button class="nav-pill on" id="nav-collection" onclick="switchTab('collection')"><span class="ti">📚</span>Collection</button>
+      <button class="nav-pill" id="nav-doubles" onclick="switchTab('doubles')"><span class="ti">🔵</span>My Doubles</button>
+      <button class="nav-pill" id="nav-missing" onclick="switchTab('missing')"><span class="ti">🔴</span>My Missing</button>
       <button class="nav-pill" id="nav-swaps" onclick="switchTab('swaps')"><span class="ti">↔</span>Swaps</button>
       <button class="nav-pill" id="nav-stats" onclick="switchTab('stats')"><span class="ti">📊</span>Stats</button>
     </div>
@@ -478,6 +493,20 @@ body{
         <div class="swapgrid" id="swapgrid"></div>
       </div>
     </div>
+  </div>
+
+  <!-- ── MY DOUBLES TAB ── -->
+  <div class="tab-view mounted" id="tab-doubles">
+    <div class="listtab-head"><h3 class="listtab-title" style="color:var(--c-blue)">🔵 My Doubles <span id="doublesCount" class="listtab-count"></span></h3><p class="listtab-sub">Stickers you have spare — available to swap.</p></div>
+    <div class="coll-grid" id="doublesGrid"></div>
+    <div id="doublesEmpty" class="listtab-empty" style="display:none">No doubles yet. Mark stickers as double in your Collection.</div>
+  </div>
+
+  <!-- ── MY MISSING TAB ── -->
+  <div class="tab-view mounted" id="tab-missing">
+    <div class="listtab-head"><h3 class="listtab-title" style="color:var(--c-red)">🔴 My Missing <span id="missingCount" class="listtab-count"></span></h3><p class="listtab-sub">Stickers you still need to complete your album.</p></div>
+    <div class="coll-grid" id="missingGrid"></div>
+    <div id="missingEmpty" class="listtab-empty" style="display:none">🎉 Nothing missing — your album is complete!</div>
   </div>
 
   <!-- ── STATS TAB ── -->
@@ -767,7 +796,9 @@ function openAddPlayerDialog(){
   document.getElementById('newPlayerName').value='';
   document.getElementById('newPlayerEmoji').value='🟡';
   document.getElementById('newPlayerColor').value='#f59e0b';
-  document.getElementById('addPlayerModal').style.display='flex';
+  const m=document.getElementById('addPlayerModal');
+  m.classList.add('modal-top');
+  m.style.display='flex';
 }
 function closeAddPlayerDialog(){ document.getElementById('addPlayerModal').style.display='none'; }
 
@@ -854,10 +885,65 @@ function switchTab(tab){
   const target = document.getElementById('tab-'+tab);
   // render content first
   if (tab==='collection') { render(); renderCollPeopleFilter(); renderAlbumTab(); }
+  else if (tab==='doubles') renderListTab('double');
+  else if (tab==='missing') renderListTab('missing');
   else if (tab==='swaps') { renderSwapPeopleFilter(); renderSwapPanel(); }
   else if (tab==='stats') renderStatsTab();
   // trigger fade+slide in on next frame
   requestAnimationFrame(()=>{ target.classList.add('active'); });
+}
+
+// ── MY DOUBLES / MY MISSING tabs ──────────────────────────────────────
+// Read-only sticker card (cross-country) showing flag + photo + name
+function listCardHtml(s){
+  const st=statusOf(me,s.id);
+  const isHave=st==='have',isDbl=st==='double';
+  const img=s.img||'';
+  const displayName=s.first?`${escapeHtml(s.first)} ${escapeHtml(s.last)}`:escapeHtml(s.last);
+  const cls='pcard status-'+st+(img?' has-img':'');
+  if(img){
+    return `<div class="${cls}" data-sid="${s.id}" onclick="cycleStatus('${s.id}')">
+      <div class="stripe"></div>
+      <div class="pctry">${flagSpan(s.country,s.flag)}</div>
+      <img class="simg" src="${img}" alt="${displayName}" loading="lazy" onload="this.classList.add('loaded')">
+      <div class="sfoot">
+        <span class="pid">${s.id}</span>
+        <span class="sname">${displayName}</span>
+        ${isDbl?'<span style="color:var(--c-blue);font-size:9px;font-weight:900">×2</span>':isHave?'<span style="color:var(--c-green);font-size:11px">✓</span>':''}
+      </div>
+      ${isDbl?'<div class="x2">×2</div>':''}
+    </div>`;
+  }
+  return `<div class="${cls}" data-sid="${s.id}" onclick="cycleStatus('${s.id}')">
+    <div class="stripe"></div>
+    <div class="phead">${flagSpan(s.country,s.flag)}<span class="pid">${s.id}</span></div>
+    <div class="pbody"><div class="pcard-name"><span class="pcard-last">${escapeHtml(s.last)}</span></div></div>
+    <div class="pfoot"><span class="dot"></span>${escapeHtml(s.country)}</div>
+  </div>`;
+}
+
+function renderListTab(status){
+  if(!me) return;
+  const isDouble=status==='double';
+  const gridId=isDouble?'doublesGrid':'missingGrid';
+  const emptyId=isDouble?'doublesEmpty':'missingEmpty';
+  const countId=isDouble?'doublesCount':'missingCount';
+  // Filter SEED by my status, keep COUNTRY_ORDER then slot order
+  const items=SEED.filter(s=>statusOf(me,s.id)===status);
+  items.sort((a,b)=>{
+    const ci=COUNTRY_ORDER.indexOf(a.country)-COUNTRY_ORDER.indexOf(b.country);
+    if(ci!==0) return ci;
+    const an=a.id.endsWith('-B')?0:parseInt(a.id.split('-')[1])||99;
+    const bn=b.id.endsWith('-B')?0:parseInt(b.id.split('-')[1])||99;
+    return an-bn;
+  });
+  const grid=document.getElementById(gridId);
+  const empty=document.getElementById(emptyId);
+  const cnt=document.getElementById(countId);
+  if(cnt) cnt.textContent='('+items.length+')';
+  if(items.length===0){ grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  grid.innerHTML=items.map(listCardHtml).join('');
 }
 
 // ── RENDER SPLASH ─────────────────────────────────────────────────────
@@ -934,6 +1020,8 @@ function toggleAlbumEdit(){
 function render(){
   if (!me) return;
   if (currentTab==='collection'){ renderCollPeopleFilter(); renderAlbumTab(); }
+  else if (currentTab==='doubles') renderListTab('double');
+  else if (currentTab==='missing') renderListTab('missing');
   else if (currentTab==='swaps'){ renderSwapPeopleFilter(); renderSwapPanel(); }
   else if (currentTab==='stats') renderStatsTab();
 }
