@@ -122,6 +122,96 @@ body{
 @keyframes slideL{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:translateX(0)}}
 @keyframes slideR{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:translateX(0)}}
 
+/* ── ALBUM BOOK SPREAD ── */
+.album-book{padding:10px 10px 80px;overflow:hidden}
+.book-spread{
+  display:flex;gap:0;border-radius:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  overflow:hidden;position:relative;
+  min-height:380px;
+}
+.book-left,.book-right{
+  padding:18px 14px;position:relative;overflow:hidden;
+  transition:background .4s ease;
+}
+.book-left{flex:0 0 38%;border-right:none}
+.book-right{flex:1}
+.book-spine{
+  width:8px;background:linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.05) 50%,rgba(0,0,0,.25));
+  flex-shrink:0;position:relative;z-index:2;
+  box-shadow:inset -2px 0 4px rgba(0,0,0,.2),inset 2px 0 4px rgba(0,0,0,.2);
+}
+/* Watermark "2026" on each page */
+.book-left::after,.book-right::after{
+  content:"2026";position:absolute;
+  font-size:140px;font-weight:900;
+  color:rgba(255,255,255,.06);
+  bottom:-20px;right:-10px;
+  pointer-events:none;line-height:1;
+  font-style:italic;letter-spacing:-.02em;
+}
+/* Organic shapes — CSS clip-path blobs */
+.page-blob{
+  position:absolute;border-radius:60% 40% 55% 45% / 50% 60% 40% 50%;
+  pointer-events:none;opacity:.35;
+}
+
+/* Left page layout */
+.we-are-block{position:relative;z-index:1;margin-bottom:10px}
+.we-are-label{font-size:.65rem;font-weight:900;letter-spacing:.14em;color:rgba(255,255,255,.7);text-transform:uppercase}
+.we-are-country{font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:.04em;text-shadow:0 2px 8px rgba(0,0,0,.4);line-height:1}
+.fed-name{font-size:.6rem;color:rgba(255,255,255,.6);margin-top:4px;line-height:1.3}
+.left-stickers{display:flex;flex-direction:column;gap:8px;margin-top:8px;position:relative;z-index:1}
+
+/* Right page: 3-col sticker grid */
+.right-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:7px;position:relative;z-index:1;
+}
+.right-grid .pcard{min-height:100px}
+
+/* Group box inside right grid */
+.group-box{
+  background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);
+  border-radius:10px;padding:6px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  grid-column:2/4;grid-row:3/4;
+}
+.group-label{font-size:.65rem;font-weight:900;letter-spacing:.08em;color:rgba(255,255,255,.7);text-transform:uppercase}
+.group-flags{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-top:2px}
+.group-flags .fi{width:20px;height:14px;border-radius:2px}
+
+/* Slot number watermark inside sticker cards */
+.pcard .slot-num{font-size:1.6rem;font-weight:900;color:rgba(255,255,255,.1);position:absolute;top:4px;left:6px;line-height:1;pointer-events:none;z-index:0}
+
+/* Mobile: stack book pages vertically */
+@media(max-width:520px){
+  .book-spread{flex-direction:column;min-height:auto}
+  .book-left{flex:none;border-right:none;border-bottom:1px solid rgba(255,255,255,.1)}
+  .book-right{flex:none}
+  .book-spine{width:100%;height:6px}
+  .left-stickers{flex-direction:row}
+}
+
+/* ── MOBILE NAV STRIP ── */
+.mobile-nav-strip{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;
+  background:rgba(13,0,21,.92);backdrop-filter:blur(12px);
+  border-top:1px solid rgba(255,255,255,.1);
+  padding:10px 16px;align-items:center;justify-content:space-between;gap:8px;
+}
+.mnav-btn{
+  background:linear-gradient(135deg,var(--c-purple),var(--c-pink));
+  border:none;color:#fff;font-size:1rem;font-weight:900;
+  padding:12px 24px;border-radius:999px;cursor:pointer;min-width:90px;
+  box-shadow:0 4px 15px rgba(168,85,247,.4);
+}
+.mnav-ctry{font-size:.85rem;font-weight:700;color:var(--muted);text-align:center;flex:1}
+@media(max-width:640px){
+  .mobile-nav-strip{display:flex}
+  .album-book{padding-bottom:90px}
+}
+
 /* ── PANINI STICKER CARD ── */
 .pcard{position:relative;border-radius:18px;padding:0;overflow:hidden;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);cursor:pointer;transition:transform .2s,box-shadow .25s,border-color .25s;display:flex;flex-direction:column;min-height:128px}
 .pcard:hover{transform:translateY(-4px)}
@@ -162,10 +252,17 @@ body{
 .pcard.pulse{animation:pulse .3s ease}
 @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
 
+/* compact sticker cards (left page of book) */
+.pcard-sm{min-height:64px;flex:1}
+.pcard-sm .phead{padding:6px 8px 4px}
+.pcard-sm .pbody{padding:2px 8px 6px}
+.left-stickers .pcard-sm.is-badge{min-height:auto;flex:0 0 auto}
+
 /* sticker card first+last name */
 .pcard-name{text-align:center}
-.pcard-first{display:block;font-size:.65rem;opacity:.75;letter-spacing:.04em;text-transform:uppercase}
-.pcard-last{display:block;font-size:.85rem;font-weight:900;letter-spacing:.02em}
+.pcard .pbody{position:relative;z-index:1}
+.pcard-first{display:block;font-size:.6rem;color:rgba(255,255,255,.65);letter-spacing:.06em;text-transform:uppercase;line-height:1.2}
+.pcard-last{display:block;font-size:.82rem;font-weight:900;letter-spacing:.01em;line-height:1.1;word-break:break-word}
 
 /* inline name edit form */
 .pcard .pedit{position:absolute;bottom:7px;left:8px;background:rgba(168,85,247,.22);color:var(--c-purple);border:none;border-radius:999px;font-size:11px;font-weight:900;cursor:pointer;width:22px;height:22px;display:none;align-items:center;justify-content:center;line-height:1}
@@ -199,7 +296,7 @@ body{
 .vpbar{ height:6px; width:90px; background:rgba(255,255,255,.25); border-radius:3px; overflow:hidden; }
 .vpfill{ height:100%; background:#fff; border-radius:3px; transition:width .4s; }
 .vplabel{ font-size:.7rem; opacity:.8; margin-top:3px; }
-.vnav-btn{ background:rgba(255,255,255,.2); border:none; color:#fff; font-size:1.4rem; width:36px; height:36px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.vnav-btn{ background:rgba(255,255,255,.2); border:none; color:#fff; font-size:1.5rem; width:44px; height:44px; min-width:44px; min-height:44px; padding:0 4px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .vnav-btn:hover{ background:rgba(255,255,255,.35); }
 
 /* ── ACTION BAR ── */
@@ -279,6 +376,11 @@ body{
 .sr-bar{flex:1;height:7px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden;max-width:90px}
 .sr-fill{height:100%;border-radius:999px}
 .sr-pct{font-size:12px;font-weight:900;width:38px;text-align:right;flex-shrink:0}
+.sr-meta{font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;font-weight:700}
+.stats-country-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stats-sort-btn{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:none;padding:5px 12px;border-radius:999px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);color:var(--txt);cursor:pointer}
+.stats-sort-btn:hover{background:rgba(255,255,255,.12)}
+@media(max-width:520px){.sr-meta{display:none}}
 
 /* ── UPLOAD MODAL ── */
 .modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);z-index:500;align-items:center;justify-content:center;padding:14px}
@@ -356,7 +458,19 @@ body{
 
     <div class="pfilter" id="collPeopleFilter"></div>
 
-    <div class="album-grid" id="albumGrid"></div>
+    <div class="album-book" id="albumGrid">
+      <div class="book-spread" id="bookSpread">
+        <div class="book-left" id="bookLeft"></div>
+        <div class="book-spine"></div>
+        <div class="book-right" id="bookRight"></div>
+      </div>
+    </div>
+
+    <div class="mobile-nav-strip" id="mobileNavStrip">
+      <button class="mnav-btn" onclick="albumNav(-1)">‹ Prev</button>
+      <span class="mnav-ctry" id="mobileNavCtry"></span>
+      <button class="mnav-btn" onclick="albumNav(1)">Next ›</button>
+    </div>
 
     <div class="album-action-bar" id="albumActionBar">
       <button class="abar-btn" id="albumEditBtn" onclick="toggleAlbumEdit()">✎ Edit</button>
@@ -565,6 +679,8 @@ let currentTab = 'collection';
 let albumCountryIdx = 0;
 let collOtherId = null;   // selected participant to compare against in Collection
 let swapFilterId = null;  // selected participant to filter Swaps by
+let statsSortMode = 'missing';  // 'missing' | 'pct'
+function toggleStatsSort(){ statsSortMode = statsSortMode==='missing' ? 'pct' : 'missing'; renderStatsTab(); }
 
 // ── UTILITIES ─────────────────────────────────────────────────────────
 const showErr = msg => { const e=document.getElementById('err'); e.textContent=msg; e.style.display='block'; setTimeout(()=>e.style.display='none',5000); };
@@ -966,76 +1082,129 @@ function otherChip(sid){
   return `<div class="pother po-${st}" title="${escapeHtml(o.display_name)}">${o.emoji} ${lbl}</div>`;
 }
 
+// WC 2026 Groups — derive sequential groups of 3 from COUNTRY_ORDER
+function getGroupTeams(country){
+  const idx = COUNTRY_ORDER.indexOf(country);
+  if (idx < 0) return [];
+  const groupIdx = Math.floor(idx / 3);
+  const start = groupIdx * 3;
+  return COUNTRY_ORDER.slice(start, start+3);
+}
+
 function renderAlbumTab(slideDir){
   if (!me) return;
-  const ctry=COUNTRY_ORDER[albumCountryIdx];
+  const ctry = COUNTRY_ORDER[albumCountryIdx];
   if (!ctry) return;
-  const stickers=SEED.filter(s=>s.country===ctry);
-  const badge=stickers.find(s=>s.id.endsWith('-B'));
-  const players_list=stickers.filter(s=>!s.id.endsWith('-B'));
+  const stickers = SEED.filter(s => s.country === ctry);
+  const badge = stickers.find(s => s.id.endsWith('-B'));
+  const plist = stickers.filter(s => !s.id.endsWith('-B'));
 
-  // Stats
-  const total=stickers.length;
-  const owned=stickers.filter(s=>{ const st=statusOf(me,s.id); return st==='have'||st==='double'; }).length;
-  const pct=total?Math.round(100*owned/total):0;
+  const owned = stickers.filter(s => { const st=statusOf(me,s.id); return st==='have'||st==='double'; }).length;
+  const missing = stickers.filter(s => statusOf(me,s.id)==='missing').length;
+  const pct = stickers.length ? Math.round(100 * owned / Math.max(stickers.length, 12)) : 0;
 
-  const iso=isoFlag(ctry)||(FLAGCODE_ISO[(stickers[0]||{}).flag]||((stickers[0]||{}).flag||'').toLowerCase());
-  const vig=document.getElementById('countryVignette');
-  vig.style.background=countryGradient(ctry);
-  const vflag=document.getElementById('vignetteFlag');
-  vflag.className='fi vignette-flag'+(iso?' fi-'+iso:'');
-  document.getElementById('vignetteName').textContent=ctry.toUpperCase();
-  document.getElementById('vignetteSub').textContent=total+' / 48';
-  document.getElementById('vignetteFill').style.width=pct+'%';
-  document.getElementById('vignetteLabel').textContent=owned+'/'+total+' owned';
-  document.getElementById('albumCountrySelect').value=albumCountryIdx;
+  // Update vignette header
+  const iso = isoFlag(ctry) || (FLAGCODE_ISO[(stickers[0]||{}).flag] || ((stickers[0]||{}).flag||'').toLowerCase());
+  const vig = document.getElementById('countryVignette');
+  vig.style.background = countryGradient(ctry);
+  const vflag = document.getElementById('vignetteFlag');
+  if (vflag) { vflag.className='fi vignette-flag'+(iso?' fi-'+iso:''); }
+  const vname = document.getElementById('vignetteName');
+  if (vname) vname.textContent = ctry.toUpperCase();
+  const vsub = document.getElementById('vignetteSub');
+  if (vsub) vsub.textContent = (albumCountryIdx+1)+' / 48';
+  const vfill = document.getElementById('vignetteFill');
+  if (vfill) vfill.style.width = pct+'%';
+  const vlbl = document.getElementById('vignetteLabel');
+  if (vlbl) vlbl.textContent = owned+'/'+stickers.length+' · '+missing+' missing';
+  const asel = document.getElementById('albumCountrySelect');
+  if (asel) asel.value = albumCountryIdx;
+  const mctry = document.getElementById('mobileNavCtry');
+  if (mctry) mctry.textContent = ctry;
 
-  let h='';
-  // Badge card (full width)
-  if (badge){
-    const st=statusOf(me,badge.id);
-    const isHave=st==='have',isDbl=st==='double';
-    const cls='pcard is-badge status-'+st+(editMode?' edit-mode':'');
-    h+=`<div class="${cls}" data-sid="${badge.id}" onclick="cycleStatus('${badge.id}')">
-      <div class="shield">🛡️</div>
-      <div class="pbody">
-        <div class="pid">${badge.id}</div>
-        <div class="plast" style="font-size:14px">BADGE ${escapeHtml(ctry)}</div>
-      </div>
-      ${isDbl?'<div class="x2">×2</div>':isHave?'<div class="pcheck">✓</div>':''}
-      ${otherChip(badge.id)}
-    </div>`;
-  }
+  // Country gradient colors for page background
+  const grad = countryGradient(ctry);
+  const bgMatch = grad.match(/#[0-9a-fA-F]{6}/);
+  const pageBg = bgMatch ? bgMatch[0]+'33' : 'rgba(99,102,241,0.15)';
+  const blobColor = bgMatch ? bgMatch[0]+'55' : 'rgba(99,102,241,0.25)';
+  const allHex = grad.match(/#[0-9a-fA-F]{6}/g);
+  const blobColor2 = (allHex && allHex[1]) ? allHex[1]+'44' : 'rgba(168,85,247,0.2)';
 
-  // Player cards
-  for (const s of players_list){
-    const st=statusOf(me,s.id);
-    const isHave=st==='have',isDbl=st==='double';
-    const cls='pcard status-'+st+(editMode?' edit-mode':'');
-    const nameHtml=`<div class="pcard-name">
-        ${s.first?`<span class="pcard-first">${escapeHtml(s.first)}</span>`:''}
-        <span class="pcard-last">${escapeHtml(s.last)}</span>
+  function cardHtml(s, compact){
+    const st = statusOf(me,s.id);
+    const isHave=st==='have', isDbl=st==='double';
+    const cls='pcard status-'+st+(editMode?' edit-mode':'')+(compact?' pcard-sm':'');
+    if (s.id.endsWith('-B')){
+      return `<div class="${cls} is-badge" data-sid="${s.id}" onclick="cycleStatus('${s.id}')">
+        <div class="shield">🛡️</div>
+        <div class="pbody"><div class="plast" style="font-size:12px">BADGE</div><div class="pcard-first">${escapeHtml(ctry)}</div></div>
+        ${isDbl?'<div class="x2">×2</div>':isHave?'<div class="pcheck">✓</div>':''}
+        ${otherChip(s.id)}
       </div>`;
-    h+=`<div class="${cls}" data-sid="${s.id}" onclick="cycleStatus('${s.id}')">
+    }
+    const num = s.id.split('-')[1]||'';
+    return `<div class="${cls}" data-sid="${s.id}" onclick="cycleStatus('${s.id}')">
       <div class="stripe"></div>
+      <div class="slot-num">${num}</div>
       <div class="phead">${flagSpan(s.country,s.flag)}<span class="pid">${s.id}</span></div>
       <div class="pbody">
-        ${nameHtml}
+        <div class="pcard-name">
+          ${s.first?`<span class="pcard-first">${escapeHtml(s.first)}</span>`:''}
+          <span class="pcard-last">${escapeHtml(s.last)}</span>
+        </div>
       </div>
-      <div class="pfoot"><span class="dot"></span>${escapeHtml(s.country)}</div>
       ${isDbl?'<div class="x2">×2</div>':isHave?'<div class="pcheck">✓</div>':''}
       ${otherChip(s.id)}
-      ${editMode&&!s.id.endsWith('-B')?`<button class="premove" onclick="event.stopPropagation();hideSticker('${s.id}')">✕</button>`:''}
-      ${editMode&&!s.id.endsWith('-B')?`<button class="pedit" onclick="event.stopPropagation();openNameEdit('${s.id}',this)">✎</button>`:''}
+      ${editMode?`<button class="premove" onclick="event.stopPropagation();hideSticker('${s.id}')">✕</button>`:''}
+      ${editMode?`<button class="pedit" onclick="event.stopPropagation();openNameEdit('${s.id}',this)">✎</button>`:''}
     </div>`;
   }
 
-  const grid=document.getElementById('albumGrid');
-  grid.classList.remove('slide-left','slide-right');
-  grid.innerHTML=h;
-  if (slideDir==='left'){ void grid.offsetWidth; grid.classList.add('slide-left'); }
-  else if (slideDir==='right'){ void grid.offsetWidth; grid.classList.add('slide-right'); }
-  else if (!albSliding){ grid.style.transition=''; grid.style.transform='translateX(0)'; grid.style.opacity='1'; }
+  // Left page: badge + first 2 players
+  const leftPlayers = plist.slice(0,2);
+  const rightPlayers = plist.slice(2);
+
+  const leftHtml = `
+    <div class="page-blob" style="width:120px;height:120px;background:${blobColor};top:-30px;right:-20px"></div>
+    <div class="page-blob" style="width:80px;height:80px;background:${blobColor2};bottom:60px;left:-10px"></div>
+    <div class="we-are-block">
+      <div class="we-are-label">WE ARE</div>
+      <div class="we-are-country">${escapeHtml(ctry.toUpperCase())}</div>
+      <div class="fed-name">${escapeHtml(ctry)} National Team</div>
+    </div>
+    <div class="left-stickers">
+      ${badge ? cardHtml(badge, true) : ''}
+      ${leftPlayers.map(s => cardHtml(s, true)).join('')}
+    </div>`;
+
+  // Right page: 3-col grid of remaining players + group box
+  const rp = rightPlayers;
+  const rightHtml = `
+    <div class="page-blob" style="width:160px;height:160px;background:${blobColor};bottom:-40px;right:-30px"></div>
+    <div class="right-grid">
+      ${rp.slice(0,3).map(s=>cardHtml(s,false)).join('')}
+      ${rp.slice(3,6).map(s=>cardHtml(s,false)).join('')}
+      ${rp[6]?cardHtml(rp[6],false):'<div></div>'}
+      <div class="group-box">
+        <div class="group-label">GROUP</div>
+        <div class="group-flags">
+          ${getGroupTeams(ctry).map(t=>`<span class="fi fi-${isoFlag(t)||'un'}" title="${escapeHtml(t)}"></span>`).join('')}
+        </div>
+      </div>
+      ${rp.slice(7).map(s=>cardHtml(s,false)).join('')}
+    </div>`;
+
+  const bookLeft = document.getElementById('bookLeft');
+  const bookRight = document.getElementById('bookRight');
+  if (!bookLeft || !bookRight){
+    document.getElementById('albumGrid').innerHTML = stickers.map(s=>cardHtml(s,false)).join('');
+    return;
+  }
+  bookLeft.style.background = pageBg;
+  bookRight.style.background = pageBg;
+  bookLeft.innerHTML = leftHtml;
+  bookRight.innerHTML = rightHtml;
+
   document.getElementById('albumEditBtn').className='abar-btn'+(editMode?' on':'');
   document.getElementById('albumEditBtn').textContent=editMode?'✓ Done':'✎ Edit';
 }
@@ -1055,7 +1224,8 @@ function renderStatsTab(){
   const pct=totalAll?Math.round(100*totalOwned/totalAll):0;
   const swapCnt=swapsForMe().length;
 
-  // Per-country stats
+  // Per-country stats — denominator hard-coded to 12 (max per country)
+  const CMAX = 12;
   const countryStats=[];
   for (const c of COUNTRY_ORDER){
     const arr=SEED.filter(s=>s.country===c);
@@ -1068,18 +1238,20 @@ function renderStatsTab(){
       if (m==='double') dbl++;
     }
     const ownedC=own+dbl;
-    const pctC=arr.length?Math.round(100*ownedC/arr.length):0;
-    countryStats.push({c, arr, own:ownedC, total:arr.length, pctC, flag:flagSpan(c,(arr[0]||{}).flag||'')});
+    const pctC=Math.round(100*ownedC/CMAX);
+    countryStats.push({c, arr, own:ownedC, miss, total:CMAX, pctC, flag:flagSpan(c,(arr[0]||{}).flag||'')});
   }
-  countryStats.sort((a,b)=>b.pctC-a.pctC);
+  if (statsSortMode==='missing') countryStats.sort((a,b)=>b.miss-a.miss || b.pctC-a.pctC);
+  else countryStats.sort((a,b)=>b.pctC-a.pctC);
 
   let rowsH='';
-  for (const {c,own,total,pctC,flag} of countryStats){
+  for (const {c,own,miss,total,pctC,flag} of countryStats){
     const col=pctC>75?'var(--c-green)':pctC>40?'var(--c-gold)':'var(--c-red)';
     rowsH+=`<div class="stats-row">
       <div class="sr-flag">${flag}</div>
       <div class="sr-name">${escapeHtml(c)}</div>
-      <div class="sr-bar"><div class="sr-fill" style="width:${pctC}%;background:${col}"></div></div>
+      <div class="sr-bar"><div class="sr-fill" style="width:${Math.min(pctC,100)}%;background:${col}"></div></div>
+      <div class="sr-meta">${own} / ${total} · <span style="color:var(--c-red)">${miss} miss</span></div>
       <div class="sr-pct" style="color:${col}">${pctC}%</div>
     </div>`;
   }
@@ -1109,7 +1281,9 @@ function renderStatsTab(){
     </div>
     ${donut}
     <div class="stats-country-list">
-      <h4>By Country</h4>
+      <h4 class="stats-country-head">By Country
+        <button class="stats-sort-btn" onclick="toggleStatsSort()">Sort: ${statsSortMode==='missing'?'Most missing':'Most complete'}</button>
+      </h4>
       ${rowsH}
     </div>`;
 }
