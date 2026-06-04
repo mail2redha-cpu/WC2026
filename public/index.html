@@ -351,6 +351,19 @@ body{
 
 /* ── STATS TAB ── */
 .stats-inner{padding:14px}
+.stats-panel{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:20px;padding:18px;margin-bottom:16px}
+.ring-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:center}
+.ring-side{flex:1;min-width:170px}
+.ring-title{font-size:15px;font-weight:900;margin-bottom:10px;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.ring-line{font-size:12.5px;color:var(--muted);line-height:2;display:flex;align-items:center;gap:8px}
+.ring-line b{color:var(--txt)}
+.dotpill{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.chart-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px}
+@media(min-width:760px){.chart-grid{grid-template-columns:1fr 1fr}.chart-grid .chart-card:first-child{grid-column:1/-1}}
+.chart-card{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:20px;padding:14px 16px 8px}
+.chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.chart-title{font-size:13px;font-weight:900;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.chart-badge{font-size:12px;font-weight:900}
 .stats-hero{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
 @media(min-width:480px){.stats-hero{grid-template-columns:repeat(4,1fr)}}
 .stat-card{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:20px;padding:18px;text-align:center}
@@ -762,6 +775,7 @@ const COUNTRY_ORDER = (() => {
 // ── STATE ─────────────────────────────────────────────────────────────
 let players = [];
 let statusByPlayer = {};
+let rawStatusRows = [];
 let doneSet = new Set();
 let me = null;
 let view='team', filter='all', query='', country='', editMode=false;
@@ -805,6 +819,7 @@ async function loadAll(){
     if (st.error) throw st.error;
     if (dn.error) throw dn.error;
     players = p.data;
+    rawStatusRows = st.data;   // keep raw rows (incl. updated_at) for daily charts
     statusByPlayer = {};
     for (const row of st.data){
       if (!statusByPlayer[row.player_id]) statusByPlayer[row.player_id] = {};
@@ -1499,19 +1514,85 @@ function renderAlbumTab(slideDir){
 }
 
 // ── RENDER: stats tab ─────────────────────────────────────────────────
+// Build daily timeline from updated_at for current player
+function dailyStats(){
+  const rows=rawStatusRows.filter(r=>r.player_id===me && r.updated_at);
+  // group by YYYY-MM-DD
+  const byDay={}; // day -> {have:0, double:0}
+  for(const r of rows){
+    const d=(r.updated_at||'').slice(0,10);
+    if(!d) continue;
+    if(!byDay[d]) byDay[d]={have:0,double:0};
+    if(r.status==='have') byDay[d].have++;
+    else if(r.status==='double') byDay[d].double++;
+  }
+  // last 14 days inclusive
+  const days=[];
+  const today=new Date();
+  for(let i=13;i>=0;i--){
+    const dt=new Date(today); dt.setDate(today.getDate()-i);
+    const key=dt.toISOString().slice(0,10);
+    days.push({key, label:(''+dt.getDate()).padStart(2,'0')+'/'+(''+(dt.getMonth()+1)).padStart(2,'0'),
+      have:(byDay[key]||{}).have||0, double:(byDay[key]||{}).double||0});
+  }
+  return days;
+}
+
+// Fancy SVG bar chart
+function svgBars(days, key, color){
+  const W=320,H=110,pad=18,bw=(W-pad*2)/days.length;
+  const max=Math.max(1,...days.map(d=>d[key]));
+  let bars='',labels='';
+  days.forEach((d,i)=>{
+    const v=d[key], h=Math.round((v/max)*(H-34));
+    const x=pad+i*bw, y=H-22-h;
+    bars+=`<rect x="${x+1.5}" y="${y}" width="${bw-3}" height="${h}" rx="3" fill="url(#g_${key})">
+      <title>${d.label}: ${v}</title></rect>`;
+    if(v>0) bars+=`<text x="${x+bw/2}" y="${y-3}" text-anchor="middle" font-size="8" fill="${color}" font-weight="900">${v}</text>`;
+    if(i%2===0) labels+=`<text x="${x+bw/2}" y="${H-7}" text-anchor="middle" font-size="7" fill="rgba(255,255,255,.45)">${d.label}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block">
+    <defs><linearGradient id="g_${key}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}"/><stop offset="100%" stop-color="${color}" stop-opacity=".35"/>
+    </linearGradient></defs>${bars}${labels}</svg>`;
+}
+
+// Fancy SVG cumulative area (collection growth)
+function svgArea(days, color){
+  const W=320,H=120,pad=14;
+  let cum=0; const pts=days.map(d=>{cum+=d.have; return cum;});
+  const max=Math.max(1,...pts);
+  const stepX=(W-pad*2)/(days.length-1||1);
+  const coords=pts.map((v,i)=>[pad+i*stepX, H-20-(v/max)*(H-34)]);
+  const line=coords.map((c,i)=>(i?'L':'M')+c[0].toFixed(1)+' '+c[1].toFixed(1)).join(' ');
+  const area=line+` L ${coords[coords.length-1][0].toFixed(1)} ${H-20} L ${coords[0][0].toFixed(1)} ${H-20} Z`;
+  const dots=coords.map((c,i)=>days[i].have>0?`<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="2.5" fill="${color}"/>`:'').join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block">
+    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity=".5"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#ag)"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}</svg>`;
+}
+
 function renderStatsTab(){
   if (!me) return;
   let totalMiss=0,totalDbl=0,totalHave=0;
   for (const s of SEED){
     const m=statusOf(me,s.id);
     if (m==='missing') totalMiss++;
-    else totalHave++;
+    else totalHave++;          // have or double = a slot you own
     if (m==='double') totalDbl++;
   }
-  const totalOwned=totalHave+totalDbl;
+  // Placed = stickers actually in the album = have only (doubles are spares, NOT counted in %)
+  const placed=totalHave;       // total entries that are 'have' (excludes 'double' spares)
   const totalAll=SEED.length;
-  const pct=totalAll?Math.round(100*totalOwned/totalAll):0;
+  const pct=totalAll?Math.round(100*placed/totalAll):0;
   const swapCnt=swapsForMe().length;
+  const days=dailyStats();
+  const todayHave=days[days.length-1].have, todayDbl=days[days.length-1].double;
+  const weekHave=days.slice(-7).reduce((a,d)=>a+d.have,0);
 
   // Per-country stats — denominator hard-coded to 12 (max per country)
   const CMAX = 12;
@@ -1526,49 +1607,69 @@ function renderStatsTab(){
       else own++;
       if (m==='double') dbl++;
     }
-    const ownedC=own+dbl;
-    const pctC=Math.round(100*ownedC/CMAX);
-    countryStats.push({c, arr, own:ownedC, miss, total:CMAX, pctC, flag:flagSpan(c,(arr[0]||{}).flag||'')});
+    const placedC=own-dbl;     // have only (doubles excluded from %)
+    const pctC=Math.round(100*placedC/CMAX);
+    countryStats.push({c, arr, own:placedC, dbl, miss, total:CMAX, pctC, flag:flagSpan(c,(arr[0]||{}).flag||'')});
   }
   if (statsSortMode==='missing') countryStats.sort((a,b)=>b.miss-a.miss || b.pctC-a.pctC);
   else countryStats.sort((a,b)=>b.pctC-a.pctC);
 
   let rowsH='';
-  for (const {c,own,miss,total,pctC,flag} of countryStats){
+  for (const {c,own,dbl,miss,total,pctC,flag} of countryStats){
     const col=pctC>75?'var(--c-green)':pctC>40?'var(--c-gold)':'var(--c-red)';
     rowsH+=`<div class="stats-row">
       <div class="sr-flag">${flag}</div>
       <div class="sr-name">${escapeHtml(c)}</div>
       <div class="sr-bar"><div class="sr-fill" style="width:${Math.min(pctC,100)}%;background:${col}"></div></div>
-      <div class="sr-meta">${own} / ${total} · <span style="color:var(--c-red)">${miss} miss</span></div>
+      <div class="sr-meta">${own}/${total} · <span style="color:var(--c-blue)">${dbl}×2</span> · <span style="color:var(--c-red)">${miss} miss</span></div>
       <div class="sr-pct" style="color:${col}">${pctC}%</div>
     </div>`;
   }
 
-  // Donut chart (conic-gradient: owned green, missing faint)
-  const donut=`<div class="donut-wrap">
-      <div class="donut" style="border-radius:50%;background:conic-gradient(var(--c-green) 0% ${pct}%, rgba(255,255,255,0.07) ${pct}% 100%)">
-        <div style="position:absolute;inset:14px;border-radius:50%;background:#150022"></div>
-        <div class="dlabel"><div class="dp">${pct}%</div><div class="ds">Complete</div></div>
-      </div>
-      <div style="flex:1;min-width:160px">
-        <div style="font-weight:900;font-size:14px;margin-bottom:8px">Overall Collection</div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.8">
-          <div><b style="color:var(--c-green)">${totalOwned}</b> owned of <b>${totalAll}</b> stickers</div>
-          <div><b style="color:var(--c-blue)">${totalDbl}</b> doubles · <b style="color:var(--c-red)">${totalMiss}</b> missing</div>
-          <div><b style="color:var(--c-teal)">${swapCnt}</b> swappable now</div>
-        </div>
-      </div>
-    </div>`;
+  // Fancy completion ring (SVG, gradient stroke)
+  const R=52,C=2*Math.PI*R, off=C*(1-pct/100);
+  const ring=`<div class="ring-wrap">
+    <svg viewBox="0 0 130 130" width="130" height="130">
+      <defs><linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="var(--c-green)"/><stop offset="100%" stop-color="var(--c-teal)"/></linearGradient></defs>
+      <circle cx="65" cy="65" r="${R}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="11"/>
+      <circle cx="65" cy="65" r="${R}" fill="none" stroke="url(#ring)" stroke-width="11" stroke-linecap="round"
+        stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 65 65)"
+        style="transition:stroke-dashoffset .8s ease"/>
+      <text x="65" y="60" text-anchor="middle" font-size="26" font-weight="900" fill="#fff">${pct}%</text>
+      <text x="65" y="78" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.6)" letter-spacing="1">COMPLETE</text>
+    </svg>
+    <div class="ring-side">
+      <div class="ring-title">Album Completion</div>
+      <div class="ring-line"><span class="dotpill" style="background:var(--c-green)"></span><b>${placed}</b> placed of <b>${totalAll}</b></div>
+      <div class="ring-line"><span class="dotpill" style="background:var(--c-blue)"></span><b>${totalDbl}</b> doubles (spares)</div>
+      <div class="ring-line"><span class="dotpill" style="background:var(--c-red)"></span><b>${totalMiss}</b> missing</div>
+      <div class="ring-line"><span class="dotpill" style="background:var(--c-teal)"></span><b>${swapCnt}</b> swappable now</div>
+    </div>
+  </div>`;
 
   document.getElementById('statsInner').innerHTML=`
     <div class="stats-hero">
-      <div class="stat-card"><div class="sv" style="color:var(--c-green)">${totalOwned}</div><div class="sl">Owned</div></div>
+      <div class="stat-card"><div class="sv" style="color:var(--c-green)">${placed}</div><div class="sl">Placed</div></div>
       <div class="stat-card"><div class="sv" style="color:var(--c-blue)">${totalDbl}</div><div class="sl">Doubles</div></div>
       <div class="stat-card"><div class="sv" style="color:var(--c-red)">${totalMiss}</div><div class="sl">Missing</div></div>
       <div class="stat-card"><div class="sv" style="color:var(--c-teal)">${swapCnt}</div><div class="sl">Swappable</div></div>
     </div>
-    ${donut}
+    <div class="stats-panel">${ring}</div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-head"><span class="chart-title">📈 Collection growth</span><span class="chart-badge" style="color:var(--c-green)">+${weekHave} this week</span></div>
+        ${svgArea(days,'var(--c-green)')}
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><span class="chart-title">⚡ Daily progress</span><span class="chart-badge" style="color:var(--c-green)">+${todayHave} today</span></div>
+        ${svgBars(days,'have','var(--c-green)')}
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><span class="chart-title">🔵 New doubles / day</span><span class="chart-badge" style="color:var(--c-blue)">+${todayDbl} today</span></div>
+        ${svgBars(days,'double','var(--c-blue)')}
+      </div>
+    </div>
     <div class="stats-country-list">
       <h4 class="stats-country-head">By Country
         <button class="stats-sort-btn" onclick="toggleStatsSort()">Sort: ${statsSortMode==='missing'?'Most missing':'Most complete'}</button>
