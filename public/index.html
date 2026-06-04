@@ -1290,12 +1290,28 @@ function otherChip(sid){
 }
 
 // WC 2026 Groups — derive sequential groups of 3 from COUNTRY_ORDER
+// Official FIFA World Cup 2026 group draw (Dec 2025)
+const WC_GROUPS = {
+  A:['Mexico','Korea Republic','South Africa','Czechia'],
+  B:['Canada','Switzerland','Qatar','Bosnia'],
+  C:['Brazil','Morocco','Haiti','Scotland'],
+  D:['USA','Paraguay','Turkey','Australia'],
+  E:['Germany','Cote d Ivoire','Ecuador','Curazao'],
+  F:['Netherlands','Sweden','Tunisia','Japan'],
+  G:['Belgium','Egypt','Iran','New Zealand'],
+  H:['Spain','Cabo Verde','Saudi Arabia','Uruguay'],
+  I:['France','Senegal','Iraq','Norway'],
+  J:['Argentina','Algeria','Austria','Jordan'],
+  K:['Portugal','Congo DR','Uzbekistan','Colombia'],
+  L:['England','Croatia','Ghana','Panama'],
+};
+function getGroupLetter(country){
+  for(const g in WC_GROUPS) if(WC_GROUPS[g].includes(country)) return g;
+  return '';
+}
 function getGroupTeams(country){
-  const idx = COUNTRY_ORDER.indexOf(country);
-  if (idx < 0) return [];
-  const groupIdx = Math.floor(idx / 3);
-  const start = groupIdx * 3;
-  return COUNTRY_ORDER.slice(start, start+3);
+  const g=getGroupLetter(country);
+  return g?WC_GROUPS[g]:[];
 }
 
 function renderAlbumTab(slideDir){
@@ -1379,7 +1395,7 @@ function renderAlbumTab(slideDir){
   // Group chip row
   const groupTeams=getGroupTeams(ctry);
   const groupHtml=`<div class="group-chips">
-    <span class="gc-label">Group</span>
+    <span class="gc-label">Group ${getGroupLetter(ctry)}</span>
     <div class="gc-flags">${groupTeams.map(t=>`<span class="fi fi-${isoFlag(t)||'un'}" title="${escapeHtml(t)}"></span>`).join('')}</div>
   </div>`;
 
