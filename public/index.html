@@ -6,6 +6,7 @@
 <title>FIFA WC 2026 — Panini Swaps</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -101,8 +102,7 @@ body{
 
 /* ── TAB VIEWS w/ transition ── */
 .tab-view{display:none;opacity:0;transform:translateY(12px);transition:opacity .3s ease,transform .3s ease}
-.tab-view.mounted{display:block}
-.tab-view.active{opacity:1;transform:translateY(0)}
+.tab-view.active{display:block;opacity:1;transform:translateY(0)}
 
 /* ── EDIT BANNER ── */
 .eb{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:16px;margin:12px 14px 0;padding:10px 14px;font-size:12px;color:#fcd34d;line-height:1.6}
@@ -378,6 +378,8 @@ body{
 .list-section-head .fi{width:26px;height:18px;border-radius:3px}
 .list-section-head .ls-name{font-size:15px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
 .list-section-head .ls-count{font-size:12px;color:var(--muted);font-weight:700;background:rgba(255,255,255,.08);padding:2px 9px;border-radius:999px}
+.pdf-btn{padding:9px 16px;border-radius:999px;border:none;background:linear-gradient(135deg,var(--c-gold),var(--c-orange));color:#1a0a00;font-size:13px;font-weight:900;cursor:pointer;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif;box-shadow:0 6px 18px rgba(245,158,11,.35);white-space:nowrap}
+.pdf-btn:active{transform:scale(.96)}
 .lchips{display:flex;flex-wrap:wrap;gap:7px;padding:2px 4px 4px}
 .lchip{font-size:13px;font-weight:700;padding:8px 13px;border-radius:999px;border:1px solid var(--glass-border);cursor:pointer;color:var(--txt);font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif;transition:transform .12s,opacity .15s}
 .lchip:active{transform:scale(.94);opacity:.5}
@@ -539,14 +541,26 @@ body{
 
   <!-- ── MY DOUBLES TAB ── -->
   <div class="tab-view mounted" id="tab-doubles">
-    <div class="listtab-head"><h3 class="listtab-title" style="color:var(--c-blue)">🔵 My Doubles <span id="doublesCount" class="listtab-count"></span></h3><p class="listtab-sub">Stickers you have spare — available to swap.</p></div>
+    <div class="listtab-head">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <h3 class="listtab-title" style="color:var(--c-blue)">🔵 My Doubles <span id="doublesCount" class="listtab-count"></span></h3>
+        <button class="pdf-btn" onclick="exportListPdf('double')">📄 Export PDF</button>
+      </div>
+      <p class="listtab-sub">Stickers you have spare — available to swap.</p>
+    </div>
     <div class="list-wrap" id="doublesGrid"></div>
     <div id="doublesEmpty" class="listtab-empty" style="display:none">No doubles yet. Mark stickers as double in your Collection.</div>
   </div>
 
   <!-- ── MY MISSING TAB ── -->
   <div class="tab-view mounted" id="tab-missing">
-    <div class="listtab-head"><h3 class="listtab-title" style="color:var(--c-red)">🔴 My Missing <span id="missingCount" class="listtab-count"></span></h3><p class="listtab-sub">Stickers you still need to complete your album.</p></div>
+    <div class="listtab-head">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <h3 class="listtab-title" style="color:var(--c-red)">🔴 My Missing <span id="missingCount" class="listtab-count"></span></h3>
+        <button class="pdf-btn" onclick="exportListPdf('missing')">📄 Export PDF</button>
+      </div>
+      <p class="listtab-sub">Stickers you still need to complete your album.</p>
+    </div>
     <div class="list-wrap" id="missingGrid"></div>
     <div id="missingEmpty" class="listtab-empty" style="display:none">🎉 Nothing missing — your album is complete!</div>
   </div>
@@ -967,16 +981,111 @@ function renderListTab(status){
       .sort((a,b)=>(parseInt(a.id.split('-')[1])||99)-(parseInt(b.id.split('-')[1])||99));
     if(arr.length===0) continue;   // don't show empty countries
     const flag=flagSpan(country,(arr[0]||{}).flag||'');
-    const chips=arr.map(s=>{
-      const nm=s.first?`${escapeHtml(s.first)} ${escapeHtml(s.last)}`:escapeHtml(s.last);
-      return `<button class="${chipCls}" onclick="removeFromList('${s.id}')" title="Tap to remove">${nm}</button>`;
-    }).join('');
+    const cards=arr.map(s=>listCardHtml(s)).join('');
     html+=`<div class="list-section">
       <div class="list-section-head">${flag}<span class="ls-name">${escapeHtml(country)}</span><span class="ls-count">${arr.length}</span></div>
-      <div class="lchips">${chips}</div>
+      <div class="coll-grid">${cards}</div>
     </div>`;
   }
   wrap.innerHTML=html;
+}
+
+// Image sticker card for doubles/missing lists; tap removes from list
+function listCardHtml(s){
+  const st=statusOf(me,s.id);
+  const isHave=st==='have',isDbl=st==='double';
+  const img=s.img||'';
+  const nm=s.first?`${escapeHtml(s.first)} ${escapeHtml(s.last)}`:escapeHtml(s.last);
+  const cls='pcard status-'+st+(img?' has-img':'');
+  if(img){
+    return `<div class="${cls}" data-sid="${s.id}" onclick="removeFromList('${s.id}')" title="Tap to remove">
+      <img class="simg" src="${img}" alt="${nm}" loading="lazy" onload="this.classList.add('loaded')">
+      <div class="sfoot"><span class="pid">${s.id}</span><span class="sname">${nm}</span>${isDbl?'<span style="color:var(--c-blue);font-size:9px;font-weight:900">×2</span>':''}</div>
+      ${isDbl?'<div class="x2">×2</div>':''}
+    </div>`;
+  }
+  return `<div class="${cls}" data-sid="${s.id}" onclick="removeFromList('${s.id}')" title="Tap to remove">
+    <div class="stripe"></div>
+    <div class="phead"><span class="pid">${s.id}</span></div>
+    <div class="pbody"><div class="pcard-name"><span class="pcard-last">${escapeHtml(s.last)}</span></div></div>
+  </div>`;
+}
+
+// ── EXPORT TO PDF ──────────────────────────────────────────────────────
+// High-res stickers, large, spread across 2 pages.
+async function exportListPdf(status){
+  if(!me) return;
+  if(!window.jspdf||!window.jspdf.jsPDF){ showError&&showError('PDF library not loaded'); alert('PDF library still loading — try again in a second.'); return; }
+  const items=SEED.filter(s=>statusOf(me,s.id)===status && !s.id.endsWith('-B') && s.img);
+  if(items.length===0){ alert('Nothing to export.'); return; }
+  // order by country then slot
+  items.sort((a,b)=>{
+    const ci=COUNTRY_ORDER.indexOf(a.country)-COUNTRY_ORDER.indexOf(b.country);
+    if(ci!==0) return ci;
+    return (parseInt(a.id.split('-')[1])||99)-(parseInt(b.id.split('-')[1])||99);
+  });
+
+  const meName=(players.find(p=>p.id===me)||{}).display_name||'';
+  const title=(status==='double'?'My Doubles (Swap)':'My Missing')+' — '+meName;
+
+  const { jsPDF }=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const PW=210, PH=297, MX=10, MTOP=18, MBOT=10;
+  // Split across 2 pages
+  const half=Math.ceil(items.length/2);
+  const pages=[items.slice(0,half), items.slice(half)];
+
+  // Helper: load an image to a data URL at full resolution
+  function loadImg(src){
+    return new Promise(res=>{
+      const im=new Image(); im.crossOrigin='anonymous';
+      im.onload=()=>res(im); im.onerror=()=>res(null);
+      im.src=src;
+    });
+  }
+
+  for(let pi=0; pi<pages.length; pi++){
+    const list=pages[pi];
+    if(list.length===0) continue;
+    if(pi>0) doc.addPage();
+    // Title
+    doc.setFontSize(16); doc.setTextColor(20,20,40);
+    doc.text(title, MX, 12);
+    doc.setFontSize(9); doc.setTextColor(120,120,140);
+    doc.text(`Page ${pi+1} of ${pages.length} · ${items.length} stickers`, PW-MX, 12, {align:'right'});
+
+    // grid: choose cols so stickers are large; ~5 cols fits A4 nicely
+    const COLS=5;
+    const gap=4;
+    const cellW=(PW-2*MX-(COLS-1)*gap)/COLS;
+    const cellH=cellW*1.5;            // 2:3 sticker ratio
+    const labelH=5;
+    let x=MX, y=MTOP, col=0;
+    for(const s of list){
+      const im=await loadImg(s.img);
+      if(im){
+        // draw at high quality
+        try{ doc.addImage(im, 'JPEG', x, y, cellW, cellH, undefined, 'SLOW'); }catch(e){}
+      } else {
+        doc.setDrawColor(200); doc.rect(x,y,cellW,cellH);
+      }
+      // label
+      doc.setFontSize(6); doc.setTextColor(60,60,80);
+      const nm=(s.last||'').slice(0,16);
+      doc.text(`${s.id} ${nm}`, x+cellW/2, y+cellH+3, {align:'center', maxWidth:cellW});
+      col++;
+      if(col>=COLS){ col=0; x=MX; y+=cellH+labelH+gap; }
+      else { x+=cellW+gap; }
+      // new page within this half if overflow (rare) — extend downwards is fine on A4
+      if(y+cellH>PH-MBOT && col===0 && s!==list[list.length-1]){
+        doc.addPage();
+        doc.setFontSize(16); doc.setTextColor(20,20,40); doc.text(title,MX,12);
+        y=MTOP;
+      }
+    }
+  }
+
+  doc.save(`panini-${status}-${meName.replace(/\s+/g,'_')||'list'}.pdf`);
 }
 
 // ── RENDER SPLASH ─────────────────────────────────────────────────────
