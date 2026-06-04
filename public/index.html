@@ -983,8 +983,9 @@ function renderListTab(status){
   const countId=isDouble?'doublesCount':'missingCount';
   const chipCls=isDouble?'lchip lchip-dbl':'lchip lchip-miss';
 
-  // Group by country in COUNTRY_ORDER; skip countries with nothing
-  const items=SEED.filter(s=>statusOf(me,s.id)===status && !s.id.endsWith('-B'));
+  // Group by country in COUNTRY_ORDER; skip countries with nothing.
+  // Badges (-B) are included so you can track missing team logos too.
+  const items=SEED.filter(s=>statusOf(me,s.id)===status);
   const cnt=document.getElementById(countId);
   if(cnt) cnt.textContent='('+items.length+')';
   const wrap=document.getElementById(gridId);
@@ -995,7 +996,7 @@ function renderListTab(status){
   let html='';
   for(const country of COUNTRY_ORDER){
     const arr=items.filter(s=>s.country===country)
-      .sort((a,b)=>(parseInt(a.id.split('-')[1])||99)-(parseInt(b.id.split('-')[1])||99));
+      .sort((a,b)=>(a.id.endsWith('-B')?0:parseInt(a.id.split('-')[1])||99)-(b.id.endsWith('-B')?0:parseInt(b.id.split('-')[1])||99));
     if(arr.length===0) continue;   // don't show empty countries
     const flag=flagSpan(country,(arr[0]||{}).flag||'');
     const cards=arr.map(s=>listCardHtml(s)).join('');
