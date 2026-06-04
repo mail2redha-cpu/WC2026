@@ -438,14 +438,8 @@ img.avatar.is-logo{object-fit:contain;background:#fff;padding:2px}
 .uo-desc{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
 .pcard .pctry{position:absolute;top:6px;left:6px;z-index:4;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:999px}
 .pcard .pctry .fi{width:18px;height:13px;border-radius:2px}
-.modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:1500;align-items:center;justify-content:center;padding:14px}
-.modal-wrap.modal-top{align-items:flex-start;padding-top:60px}
-.modal-card{max-height:88vh;overflow-y:auto}
-/* user admin list */
-.usr-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:rgba(255,255,255,.05);margin-bottom:6px;cursor:pointer;border:1.5px solid transparent}
-.usr-row.sel{border-color:var(--c-purple);background:rgba(168,85,247,.12)}
-.usr-row .un{flex:1;font-weight:800;font-size:13px}
-.usr-row .ua{font-size:10px;color:var(--muted)}
+.modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);z-index:500;align-items:center;justify-content:center;padding:14px}
+.modal-wrap.modal-top{align-items:flex-start;padding-top:80px}
 .modal-card{background:rgba(24,10,36,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:24px;padding:20px;width:100%;max-height:90vh;overflow-y:auto}
 .uploadBtn{padding:8px 14px;border-radius:999px;border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.15);color:var(--c-gold);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:.02em;transition:transform .15s}
 .uploadBtn:hover{transform:translateY(-1px);background:rgba(245,158,11,.25)}
@@ -658,16 +652,7 @@ img.avatar.is-logo{object-fit:contain;background:#fff;padding:2px}
 <!-- Add User Modal (Add Player) -->
 <div id="addPlayerModal" class="modal-wrap">
   <div class="modal-card" style="max-width:400px">
-    <h3 style="font-size:15px;font-weight:900;margin-bottom:10px;color:var(--c-gold)"><i data-lucide="users"></i> Participants</h3>
-
-    <!-- Users admin list: pick a user to edit their avatar -->
-    <div id="usrAdminList" style="margin-bottom:12px"></div>
-
-    <!-- Quick action: mark everything as HAVE -->
-    <button class="uploadBtn" style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,var(--c-green),var(--c-teal));border:none;color:#06281e;font-weight:900" onclick="markAllHave()"><i data-lucide="check-check"></i> I have ALL stickers (then unselect missing)</button>
-
-    <div style="height:1px;background:var(--glass-border);margin:6px 0 14px"></div>
-    <h3 style="font-size:13px;font-weight:900;margin-bottom:10px;color:var(--c-gold)"><i data-lucide="user-plus"></i> Add / edit participant</h3>
+    <h3 style="font-size:15px;font-weight:900;margin-bottom:14px;color:var(--c-gold)"><i data-lucide="user-plus"></i> Add Participant</h3>
     <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Name</label>
     <input type="text" id="newPlayerName" class="field-inp" placeholder="e.g., Friend 1" style="margin-bottom:12px">
     <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Emoji</label>
@@ -1024,71 +1009,25 @@ function avatarDataUrl(file){
     reader.readAsDataURL(file);
   });
 }
-let avatarTargetId=null; // which participant the avatar picker edits
 function openAddPlayerDialog(){
   document.getElementById('newPlayerName').value='';
   document.getElementById('newPlayerEmoji').value='🟡';
   document.getElementById('newPlayerColor').value='#f59e0b';
-  avatarTargetId = me || null;
-  pendingAvatar = avatarTargetId ? (playerAvatars[avatarTargetId]||null) : null;
+  pendingAvatar = me ? (playerAvatars[me]||null) : null;
   const m=document.getElementById('addPlayerModal');
   m.classList.add('modal-top');
   m.style.display='flex';
-  renderUsrAdminList();
   renderAvatarPicker();
   refreshIcons();
 }
 function closeAddPlayerDialog(){ document.getElementById('addPlayerModal').style.display='none'; }
-
-// Users admin list — pick whose avatar you're editing
-function renderUsrAdminList(){
-  const root=document.getElementById('usrAdminList');
-  if(!root) return;
-  if(!players.length){ root.innerHTML='<div style="font-size:11px;color:var(--muted)">No participants yet.</div>'; return; }
-  root.innerHTML=players.map(p=>`
-    <div class="usr-row${p.id===avatarTargetId?' sel':''}" onclick="pickAvatarTarget('${p.id}')">
-      ${avatarHtml(p,34)}
-      <div class="un">${escapeHtml(p.display_name)}</div>
-      <div class="ua">${p.id===avatarTargetId?'editing avatar':'tap to edit'}</div>
-    </div>`).join('');
-  refreshIcons();
-}
-function pickAvatarTarget(id){
-  avatarTargetId=id;
-  pendingAvatar=playerAvatars[id]||null;
-  renderUsrAdminList();
-  renderAvatarPicker();
-}
-// Apply pending avatar to the selected participant
+// Apply pending avatar to current participant (no new name needed)
 async function saveMyAvatar(){
-  const target=avatarTargetId||me;
-  if(!target){ showErr('Pick a participant first'); return; }
-  await setPlayerAvatar(target, pendingAvatar);
+  if(!me){ showErr('Pick a participant first'); return; }
+  await setPlayerAvatar(me, pendingAvatar);
   closeAddPlayerDialog();
   renderSplash(); render();
   showErr('Avatar updated');
-}
-
-// Mark every sticker as HAVE for the current participant (then unselect missing)
-async function markAllHave(){
-  if(!me){ showErr('Pick a participant first'); return; }
-  if(!confirm('Mark ALL '+SEED.length+' stickers as HAVE for you?\n\nThen just open Collection and unselect the ones you are missing.')) return;
-  writing++;
-  try{
-    const now=new Date().toISOString();
-    const rows=SEED.map(s=>({player_id:me,sticker_id:s.id,status:'have',updated_at:now}));
-    // upsert in chunks to stay under limits
-    for(let i=0;i<rows.length;i+=200){
-      const { error }=await sb.from('sticker_status').upsert(rows.slice(i,i+200));
-      if(error) throw error;
-    }
-    if(!statusByPlayer[me]) statusByPlayer[me]={};
-    for(const s of SEED) statusByPlayer[me][s.id]='have';
-    closeAddPlayerDialog();
-    render();
-    showErr('All marked as HAVE — now unselect your missing ones.');
-  }catch(e){ showErr('Failed: '+(e.message||e)); }
-  finally{ writing--; }
 }
 
 async function createNewPlayer(){
