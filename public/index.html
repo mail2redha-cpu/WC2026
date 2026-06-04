@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -51,6 +52,24 @@ body{
   transition:background .4s ease,color .4s ease
 }
 .flag-icon,.fi{border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+
+/* ── LUCIDE ICONS ── */
+i[data-lucide]{display:inline-block;width:1em;height:1em;vertical-align:-0.125em;stroke-width:2.4}
+.topnav .nav-pill i[data-lucide]{width:18px;height:18px}
+.uo-icon i[data-lucide]{width:30px;height:30px}
+.pcard.is-badge .shield i[data-lucide]{width:34px;height:34px}
+/* ── PARTICIPANT AVATARS ── */
+.avatar{border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle;background:rgba(255,255,255,.08);flex:0 0 auto}
+img.avatar.is-logo{object-fit:contain;background:#fff;padding:2px}
+.avatar-circle{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;flex:0 0 auto}
+.av-section{margin-bottom:12px}
+.av-preview{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.av-preview .avatar,.av-preview .avatar-circle{width:54px;height:54px;font-size:26px}
+.club-row{display:flex;gap:8px;overflow-x:auto;padding:4px 0 6px;-webkit-overflow-scrolling:touch}
+.club-row::-webkit-scrollbar{height:5px}
+.club-pick{flex:0 0 auto;width:46px;height:46px;border-radius:12px;background:#fff;border:2px solid var(--glass-border);padding:4px;cursor:pointer;object-fit:contain;transition:transform .15s,border-color .15s}
+.club-pick:hover{transform:translateY(-2px)}
+.club-pick.on{border-color:var(--c-gold);box-shadow:0 0 0 2px rgba(245,158,11,.4)}
 
 /* glass helper */
 .glass{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:20px}
@@ -477,23 +496,23 @@ body{
       <div class="logo">FIFA WC <span>2026</span><small>Panini Swaps</small></div>
       <button class="pbadge" id="pbadge" onclick="backSplash()">…</button>
       <span class="sync-txt" id="sync"></span>
-      <button class="gear-btn" id="themeBtn" style="margin-left:auto" onclick="toggleTheme()" title="Toggle light/dark">☀️</button>
-      <button class="gear-btn" onclick="openAddPlayerDialog()" title="Add user">⚙️</button>
+      <button class="gear-btn" id="themeBtn" style="margin-left:auto" onclick="toggleTheme()" title="Toggle light/dark"><i data-lucide="sun"></i></button>
+      <button class="gear-btn" onclick="openAddPlayerDialog()" title="Add user"><i data-lucide="user-plus"></i></button>
     </div>
     <div class="topnav">
-      <button class="nav-pill on" id="nav-collection" onclick="switchTab('collection')"><span class="ti">📚</span>Collection</button>
-      <button class="nav-pill" id="nav-upload" onclick="switchTab('upload')"><span class="ti">📤</span>Upload</button>
-      <button class="nav-pill" id="nav-doubles" onclick="switchTab('doubles')"><span class="ti">🔵</span>Doubles</button>
-      <button class="nav-pill" id="nav-missing" onclick="switchTab('missing')"><span class="ti">🔴</span>Missing</button>
-      <button class="nav-pill" id="nav-swaps" onclick="switchTab('swaps')"><span class="ti">↔</span>Swaps</button>
-      <button class="nav-pill" id="nav-stats" onclick="switchTab('stats')"><span class="ti">📊</span>Stats</button>
+      <button class="nav-pill on" id="nav-collection" onclick="switchTab('collection')"><span class="ti"><i data-lucide="library"></i></span>Collection</button>
+      <button class="nav-pill" id="nav-upload" onclick="switchTab('upload')"><span class="ti"><i data-lucide="upload"></i></span>Upload</button>
+      <button class="nav-pill" id="nav-doubles" onclick="switchTab('doubles')"><span class="ti"><i data-lucide="copy"></i></span>Doubles</button>
+      <button class="nav-pill" id="nav-missing" onclick="switchTab('missing')"><span class="ti"><i data-lucide="search"></i></span>Missing</button>
+      <button class="nav-pill" id="nav-swaps" onclick="switchTab('swaps')"><span class="ti"><i data-lucide="arrow-left-right"></i></span>Swaps</button>
+      <button class="nav-pill" id="nav-stats" onclick="switchTab('stats')"><span class="ti"><i data-lucide="bar-chart-3"></i></span>Stats</button>
     </div>
   </div>
 
   <!-- ── COLLECTION TAB (default) ── -->
   <div class="tab-view mounted active" id="tab-collection">
     <div class="country-vignette" id="countryVignette">
-      <button class="vnav-btn" onclick="albumNav(-1)">‹</button>
+      <button class="vnav-btn" onclick="albumNav(-1)"><i data-lucide="chevron-left"></i></button>
       <div class="vignette-body">
         <span class="fi vignette-flag" id="vignetteFlag"></span>
         <div class="vignette-info">
@@ -505,7 +524,7 @@ body{
           <div class="vplabel" id="vignetteLabel">0/0 owned</div>
         </div>
       </div>
-      <button class="vnav-btn" onclick="albumNav(1)">›</button>
+      <button class="vnav-btn" onclick="albumNav(1)"><i data-lucide="chevron-right"></i></button>
     </div>
     <div style="padding:0 14px 2px;display:flex;justify-content:flex-end;align-items:center;gap:8px">
       <div class="pfilter" id="collPeopleFilter" style="padding:0;flex:1"></div>
@@ -520,16 +539,16 @@ body{
     </div>
 
     <div class="mobile-nav-strip" id="mobileNavStrip">
-      <button class="mnav-btn" onclick="albumNav(-1)">‹ Prev</button>
+      <button class="mnav-btn" onclick="albumNav(-1)"><i data-lucide="chevron-left"></i> Prev</button>
       <span class="mnav-ctry" id="mobileNavCtry"></span>
-      <button class="mnav-btn" onclick="albumNav(1)">Next ›</button>
+      <button class="mnav-btn" onclick="albumNav(1)">Next <i data-lucide="chevron-right"></i></button>
     </div>
 
     <div class="album-action-bar" id="albumActionBar">
-      <button class="abar-btn" id="albumEditBtn" onclick="toggleAlbumEdit()">✎ Edit</button>
-      <button class="abar-btn teal" onclick="openUpload('album')">📷 Scan</button>
-      <button class="abar-btn" onclick="openUpload('batch')">📥 New batch</button>
-      <button class="abar-btn blue" onclick="openUpload('override-doubles')">🔄 Update doubles</button>
+      <button class="abar-btn" id="albumEditBtn" onclick="toggleAlbumEdit()"><i data-lucide="pencil"></i> Edit</button>
+      <button class="abar-btn teal" onclick="openUpload('album')"><i data-lucide="camera"></i> Scan</button>
+      <button class="abar-btn" onclick="openUpload('batch')"><i data-lucide="images"></i> New batch</button>
+      <button class="abar-btn blue" onclick="openUpload('override-doubles')"><i data-lucide="refresh-cw"></i> Update doubles</button>
     </div>
   </div>
 
@@ -538,12 +557,12 @@ body{
     <div class="swaptab-inner">
       <div id="swapPacks"></div>
       <div class="swappanel">
-        <h3 style="color:#c084fc">⬆️ You give → others <span id="giveCount" class="listtab-count"></span></h3>
+        <h3 style="color:#c084fc"><i data-lucide="arrow-up"></i> You give → others <span id="giveCount" class="listtab-count"></span></h3>
         <div class="pfilter" id="giveFilter"></div>
         <div class="swapgrid" id="giveGrid"></div>
       </div>
       <div class="swappanel">
-        <h3 style="color:var(--c-teal)">⬇️ Others give → you <span id="getCount" class="listtab-count"></span></h3>
+        <h3 style="color:var(--c-teal)"><i data-lucide="arrow-down"></i> Others give → you <span id="getCount" class="listtab-count"></span></h3>
         <div class="pfilter" id="getFilter"></div>
         <div class="swapgrid" id="getGrid"></div>
       </div>
@@ -552,18 +571,18 @@ body{
 
   <!-- ── UPLOAD TAB ── -->
   <div class="tab-view mounted" id="tab-upload">
-    <div class="listtab-head"><h3 class="listtab-title" style="color:var(--c-gold)">📤 Upload &amp; Scan</h3><p class="listtab-sub">Use your phone camera or photos to update your album automatically.</p></div>
+    <div class="listtab-head"><h3 class="listtab-title" style="color:var(--c-gold)"><i data-lucide="upload"></i> Upload &amp; Scan</h3><p class="listtab-sub">Use your phone camera or photos to update your album automatically.</p></div>
     <div class="upload-options">
       <button class="upload-opt" onclick="openUpload('album')">
-        <div class="uo-icon">📷</div>
+        <div class="uo-icon"><i data-lucide="camera"></i></div>
         <div class="uo-text"><div class="uo-title">Scan an album page</div><div class="uo-desc">Take a photo of one country's album page. Detects which slots are filled (have) or empty (missing).</div></div>
       </button>
       <button class="upload-opt" onclick="openUpload('batch')">
-        <div class="uo-icon">📥</div>
+        <div class="uo-icon"><i data-lucide="images"></i></div>
         <div class="uo-text"><div class="uo-title">New batch of stickers</div><div class="uo-desc">Photograph a pile of new stickers you just opened. Adds them to your collection as "have".</div></div>
       </button>
       <button class="upload-opt" onclick="openUpload('override-doubles')">
-        <div class="uo-icon">🔄</div>
+        <div class="uo-icon"><i data-lucide="refresh-cw"></i></div>
         <div class="uo-text"><div class="uo-title">Update my doubles</div><div class="uo-desc">Photograph your spare/duplicate stickers. Marks them as doubles available to swap.</div></div>
       </button>
     </div>
@@ -573,8 +592,8 @@ body{
   <div class="tab-view mounted" id="tab-doubles">
     <div class="listtab-head">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <h3 class="listtab-title" style="color:var(--c-blue)">🔵 My Doubles <span id="doublesCount" class="listtab-count"></span></h3>
-        <button class="pdf-btn" onclick="exportListPdf('double')">📄 Export PDF</button>
+        <h3 class="listtab-title" style="color:var(--c-blue)"><i data-lucide="copy"></i> My Doubles <span id="doublesCount" class="listtab-count"></span></h3>
+        <button class="pdf-btn" onclick="exportListPdf('double')"><i data-lucide="file-text"></i> Export PDF</button>
       </div>
       <p class="listtab-sub">Stickers you have spare — available to swap.</p>
     </div>
@@ -586,13 +605,13 @@ body{
   <div class="tab-view mounted" id="tab-missing">
     <div class="listtab-head">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <h3 class="listtab-title" style="color:var(--c-red)">🔴 My Missing <span id="missingCount" class="listtab-count"></span></h3>
-        <button class="pdf-btn" onclick="exportListPdf('missing')">📄 Export PDF</button>
+        <h3 class="listtab-title" style="color:var(--c-red)"><i data-lucide="search"></i> My Missing <span id="missingCount" class="listtab-count"></span></h3>
+        <button class="pdf-btn" onclick="exportListPdf('missing')"><i data-lucide="file-text"></i> Export PDF</button>
       </div>
       <p class="listtab-sub">Stickers you still need to complete your album.</p>
     </div>
     <div class="list-wrap" id="missingGrid"></div>
-    <div id="missingEmpty" class="listtab-empty" style="display:none">🎉 Nothing missing — your album is complete!</div>
+    <div id="missingEmpty" class="listtab-empty" style="display:none"><i data-lucide="party-popper"></i> Nothing missing — your album is complete!</div>
   </div>
 
   <!-- ── STATS TAB ── -->
@@ -612,7 +631,7 @@ body{
       <div id="detectedCountryName" style="font-size:14px;font-weight:900;color:var(--c-gold);margin-top:4px"></div>
     </div>
     <input type="file" id="uploadFile" accept="image/*" multiple style="display:none" onchange="onFilesPicked(event)">
-    <button class="uploadBtn" style="width:100%;padding:13px" onclick="document.getElementById('uploadFile').click()">📎 Choose photos</button>
+    <button class="uploadBtn" style="width:100%;padding:13px" onclick="document.getElementById('uploadFile').click()"><i data-lucide="image-plus"></i> Choose photos</button>
     <div id="uploadThumbs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
     <div id="uploadStatus" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
     <div id="scanLog" style="margin-top:12px;display:none"></div>
@@ -620,12 +639,12 @@ body{
       <div id="uploadResultsHeader" style="font-size:14px;color:#fff;font-weight:700;margin-bottom:8px">Review before applying:</div>
       <div id="uploadResultsList" style="max-height:340px;overflow-y:auto;background:rgba(255,255,255,.04);border-radius:14px;padding:12px;font-size:14px"></div>
       <div style="margin-top:10px;display:flex;gap:8px">
-        <button class="uploadBtn" style="flex:1" id="applyBtn" onclick="applyExtraction()">✓ Apply</button>
+        <button class="uploadBtn" style="flex:1" id="applyBtn" onclick="applyExtraction()"><i data-lucide="check"></i> Apply</button>
         <button class="uploadBtn" style="background:transparent;border:1px solid var(--glass-border);color:var(--muted)" onclick="closeUpload()">Cancel</button>
       </div>
     </div>
     <div style="margin-top:14px;text-align:right">
-      <button onclick="closeUpload()" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer">Close ✕</button>
+      <button onclick="closeUpload()" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer">Close <i data-lucide="x"></i></button>
     </div>
   </div>
 </div>
@@ -633,17 +652,33 @@ body{
 <!-- Add User Modal (Add Player) -->
 <div id="addPlayerModal" class="modal-wrap">
   <div class="modal-card" style="max-width:400px">
-    <h3 style="font-size:15px;font-weight:900;margin-bottom:14px;color:var(--c-gold)">➕ Add Participant</h3>
+    <h3 style="font-size:15px;font-weight:900;margin-bottom:14px;color:var(--c-gold)"><i data-lucide="user-plus"></i> Add Participant</h3>
     <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Name</label>
     <input type="text" id="newPlayerName" class="field-inp" placeholder="e.g., Friend 1" style="margin-bottom:12px">
     <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Emoji</label>
     <input type="text" id="newPlayerEmoji" class="field-inp" placeholder="e.g., 🟡" maxlength="2" style="margin-bottom:12px">
     <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Color</label>
     <input type="color" id="newPlayerColor" value="#a855f7" class="field-inp" style="margin-bottom:12px;cursor:pointer;height:42px">
+
+    <div class="av-section">
+      <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Avatar</label>
+      <div class="av-preview">
+        <span id="avPreview"></span>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <input type="file" id="avFile" accept="image/*" style="display:none" onchange="onAvatarFilePicked(event)">
+          <button type="button" class="uploadBtn" onclick="document.getElementById('avFile').click()"><i data-lucide="upload"></i> Upload photo</button>
+          <button type="button" class="uploadBtn" style="background:transparent;border:1px solid var(--glass-border);color:var(--muted)" onclick="setPendingAvatar(null)"><i data-lucide="x"></i> Clear</button>
+        </div>
+      </div>
+      <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Or pick a French club</label>
+      <div class="club-row" id="clubRow"></div>
+    </div>
+
     <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="uploadBtn" style="flex:1;background:linear-gradient(135deg,var(--c-teal),var(--c-blue));border:none;color:#fff" onclick="createNewPlayer()">✓ Create</button>
+      <button class="uploadBtn" style="flex:1;background:linear-gradient(135deg,var(--c-teal),var(--c-blue));border:none;color:#fff" onclick="createNewPlayer()"><i data-lucide="check"></i> Create</button>
       <button class="uploadBtn" style="flex:1;background:transparent;border:1px solid var(--glass-border);color:var(--muted)" onclick="closeAddPlayerDialog()">Cancel</button>
     </div>
+    <button class="uploadBtn" style="width:100%;margin-top:8px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.4);color:#d8b4fe" onclick="saveMyAvatar()"><i data-lucide="user"></i> Set my avatar (no name needed)</button>
   </div>
 </div>
 
@@ -735,12 +770,14 @@ function toggleTheme(){
   document.documentElement.setAttribute('data-theme',t);
   localStorage.setItem('theme',t);
   const btn=document.getElementById('themeBtn');
-  if(btn) btn.textContent = t==='light'?'🌙':'☀️';
+  if(btn){ btn.innerHTML = '<i data-lucide="'+(t==='light'?'moon':'sun')+'"></i>'; refreshIcons(); }
 }
+// Re-render Lucide icons after dynamic HTML updates
+function refreshIcons(){ if(window.lucide&&window.lucide.createIcons) window.lucide.createIcons(); }
 // apply saved theme immediately
 const savedTheme = localStorage.getItem('theme')||'dark';
 document.documentElement.setAttribute('data-theme', savedTheme);
-(function(){ const b=document.getElementById('themeBtn'); if(b) b.textContent = savedTheme==='light'?'🌙':'☀️'; })();
+(function(){ const b=document.getElementById('themeBtn'); if(b){ b.innerHTML='<i data-lucide="'+(savedTheme==='light'?'moon':'sun')+'"></i>'; } })();
 // Returns a flag-icon <span> for a sticker (uses country name, falls back to flag code)
 function flagSpan(country, flagCode){
   let iso = FLAG_ISO[country] || FLAGCODE_ISO[flagCode] || (flagCode||'').toLowerCase();
@@ -753,6 +790,36 @@ const cycle = { have:'double', double:'missing', missing:'have' };
 // ── CUSTOM / HIDDEN STICKERS ──────────────────────────────────────────
 let hiddenStickers = new Set(JSON.parse(localStorage.getItem('hiddenStickers') || '[]'));
 let customStickers = JSON.parse(localStorage.getItem('customStickers') || '[]');
+
+// ── PARTICIPANT AVATARS ───────────────────────────────────────────────
+// { [playerId]: dataUrlOrLogoUrl }
+let playerAvatars = JSON.parse(localStorage.getItem('playerAvatars')||'{}');
+function saveAvatarsLocal(){ localStorage.setItem('playerAvatars', JSON.stringify(playerAvatars)); }
+async function setPlayerAvatar(id, url){
+  if(url) playerAvatars[id]=url; else delete playerAvatars[id];
+  saveAvatarsLocal();
+  try{ await sb.from('players').update({avatar:url||null}).eq('id',id); }catch(_){/* column may not exist */}
+}
+function isLogoAvatar(url){ return typeof url==='string' && /^https?:/i.test(url); }
+// Returns avatar markup (img) or colored circle with emoji/initial
+function avatarHtml(player, size){
+  const s=size||38;
+  const url=player?playerAvatars[player.id]:null;
+  if(url){
+    const cls='avatar'+(isLogoAvatar(url)?' is-logo':'');
+    return `<img class="${cls}" src="${url}" style="width:${s}px;height:${s}px">`;
+  }
+  const col=(player&&player.color)||'#a855f7';
+  const inner=(player&&player.emoji)||(player&&player.display_name?escapeHtml(player.display_name[0]):'?');
+  return `<span class="avatar-circle" style="width:${s}px;height:${s}px;background:${col}22;border:1px solid ${col}66;color:${col};font-size:${Math.round(s*0.5)}px">${inner}</span>`;
+}
+// French club crests (football-data.org)
+const FRENCH_CLUBS=[
+  {n:'PSG',id:524},{n:'Marseille',id:516},{n:'Lyon',id:523},{n:'Monaco',id:548},
+  {n:'Lille',id:521},{n:'Rennes',id:529},{n:'Nice',id:522},{n:'Lens',id:546},
+  {n:'Nantes',id:543},{n:'Strasbourg',id:576},{n:'Lorient',id:525},{n:'Brest',id:512}
+];
+const clubLogoUrl=id=>`https://crests.football-data.org/${id}.png`;
 
 // Locally-edited player names: { [id]: {first, last} }
 const nameOverrides = JSON.parse(localStorage.getItem('nameOverrides')||'{}');
@@ -820,6 +887,10 @@ async function loadAll(){
     if (st.error) throw st.error;
     if (dn.error) throw dn.error;
     players = p.data;
+    // Merge any Supabase-stored avatars (column may not exist → ignored)
+    let avatarsChanged=false;
+    for(const pl of players){ if(pl.avatar && playerAvatars[pl.id]!==pl.avatar){ playerAvatars[pl.id]=pl.avatar; avatarsChanged=true; } }
+    if(avatarsChanged) saveAvatarsLocal();
     rawStatusRows = st.data;   // keep raw rows (incl. updated_at) for daily charts
     statusByPlayer = {};
     for (const row of st.data){
@@ -881,15 +952,83 @@ function hideSticker(stickerId){
 }
 
 // ── PLAYER MANAGEMENT ─────────────────────────────────────────────────
+let pendingAvatar=null; // avatar selected in the add/edit modal
+function renderAvatarPicker(){
+  // preview: build a temp player-like object reflecting current modal inputs / current me
+  const col=document.getElementById('newPlayerColor').value;
+  const emoji=document.getElementById('newPlayerEmoji').value||'?';
+  let prevUrl=pendingAvatar;
+  let html;
+  if(prevUrl){
+    const cls='avatar'+(isLogoAvatar(prevUrl)?' is-logo':'');
+    html=`<img class="${cls}" src="${prevUrl}">`;
+  } else {
+    html=`<span class="avatar-circle" style="background:${col}22;border:1px solid ${col}66;color:${col}">${emoji}</span>`;
+  }
+  const pv=document.getElementById('avPreview'); if(pv) pv.innerHTML=html;
+  // club row
+  const row=document.getElementById('clubRow');
+  if(row){
+    row.innerHTML=FRENCH_CLUBS.map(c=>{
+      const url=clubLogoUrl(c.id);
+      const on=pendingAvatar===url?' on':'';
+      return `<img class="club-pick${on}" src="${url}" title="${c.n}" alt="${c.n}" onclick="setPendingAvatar('${url}')">`;
+    }).join('');
+  }
+  refreshIcons();
+}
+function setPendingAvatar(url){ pendingAvatar=url||null; renderAvatarPicker(); }
+async function onAvatarFilePicked(e){
+  const file=e.target.files&&e.target.files[0];
+  if(!file) return;
+  try{
+    const dataUrl=await avatarDataUrl(file);
+    setPendingAvatar(dataUrl);
+  }catch(err){ showErr('Avatar load failed'); }
+}
+// Resize a picked image to ~128px square data URL (canvas, like resizeImage)
+function avatarDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const S=128;
+        const canvas=document.createElement('canvas');
+        canvas.width=S; canvas.height=S;
+        const ctx=canvas.getContext('2d');
+        const side=Math.min(img.width,img.height);
+        const sx=(img.width-side)/2, sy=(img.height-side)/2;
+        ctx.drawImage(img,sx,sy,side,side,0,0,S,S);
+        resolve(canvas.toDataURL('image/jpeg',.85));
+      };
+      img.onerror=reject;
+      img.src=reader.result;
+    };
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
 function openAddPlayerDialog(){
   document.getElementById('newPlayerName').value='';
   document.getElementById('newPlayerEmoji').value='🟡';
   document.getElementById('newPlayerColor').value='#f59e0b';
+  pendingAvatar = me ? (playerAvatars[me]||null) : null;
   const m=document.getElementById('addPlayerModal');
   m.classList.add('modal-top');
   m.style.display='flex';
+  renderAvatarPicker();
+  refreshIcons();
 }
 function closeAddPlayerDialog(){ document.getElementById('addPlayerModal').style.display='none'; }
+// Apply pending avatar to current participant (no new name needed)
+async function saveMyAvatar(){
+  if(!me){ showErr('Pick a participant first'); return; }
+  await setPlayerAvatar(me, pendingAvatar);
+  closeAddPlayerDialog();
+  renderSplash(); render();
+  showErr('Avatar updated');
+}
 
 async function createNewPlayer(){
   const name = document.getElementById('newPlayerName').value.trim();
@@ -902,10 +1041,11 @@ async function createNewPlayer(){
     const newId='p'+Math.random().toString(36).substr(2,9);
     const { error } = await sb.from('players').insert({ id:newId, display_name:name, emoji, color, sort_order:players.length+1 });
     if (error) throw error;
+    if(pendingAvatar) await setPlayerAvatar(newId, pendingAvatar);
     await loadAll();
     renderSplash();
     closeAddPlayerDialog();
-    showErr('✓ User '+name+' added!');
+    showErr('User '+name+' added!');
   } catch(e){ showErr('Failed: '+(e.message||e)); }
   finally { writing--; }
 }
@@ -981,6 +1121,7 @@ function switchTab(tab){
   else if (tab==='stats') renderStatsTab();
   // trigger fade+slide in on next frame
   requestAnimationFrame(()=>{ target.classList.add('active'); });
+  refreshIcons();
 }
 
 // ── MY DOUBLES / MY MISSING tabs ──────────────────────────────────────
@@ -1006,7 +1147,7 @@ function renderListTab(status){
   if(cnt) cnt.textContent='('+items.length+')';
   const wrap=document.getElementById(gridId);
   const empty=document.getElementById(emptyId);
-  if(items.length===0){ wrap.innerHTML=''; empty.style.display='block'; return; }
+  if(items.length===0){ wrap.innerHTML=''; empty.style.display='block'; refreshIcons(); return; }
   empty.style.display='none';
 
   let html='';
@@ -1022,6 +1163,7 @@ function renderListTab(status){
     </div>`;
   }
   wrap.innerHTML=html;
+  refreshIcons();
 }
 
 // Image sticker card for doubles/missing lists; tap removes from list
@@ -1146,16 +1288,17 @@ function renderSplash(){
       }
     }
     h+=`<div class="sp-card" style="border-color:${p.color}55" onclick="pickMe('${p.id}')">
-      <div class="av">${p.emoji}</div>
+      <div class="av">${avatarHtml(p,54)}</div>
       <div class="pn" style="color:${p.color}">${escapeHtml(p.display_name)}</div>
       <div class="ps"><b style="color:var(--c-green)">${owned}</b> owned · <b style="color:var(--c-blue)">${dbl}</b> doubles<br><b style="color:var(--c-teal)">${swaps}</b> swaps</div>
     </div>`;
   }
   h+=`<div class="sp-add" onclick="openAddPlayerDialog()">
-      <div class="av">➕</div>
+      <div class="av"><i data-lucide="user-plus"></i></div>
       <div>Add participant</div>
     </div>`;
   root.innerHTML=h;
+  refreshIcons();
 }
 
 function pickMe(id){
@@ -1166,7 +1309,8 @@ function pickMe(id){
   const p=players.find(x=>x.id===id);
   const b=document.getElementById('pbadge');
   b.style.color=p.color; b.style.borderColor=p.color+'66'; b.style.background=p.color+'22';
-  b.innerHTML=p.emoji+' '+escapeHtml(p.display_name)+' ▾';
+  b.innerHTML=avatarHtml(p,20)+' '+escapeHtml(p.display_name)+' <i data-lucide="chevron-down"></i>';
+  refreshIcons();
   populateCountrySelect();
   albumCountryIdx=0;
   switchTab('collection');
@@ -1188,7 +1332,8 @@ function toggleAlbumEdit(){
   editMode=!editMode;
   const btn=document.getElementById('albumEditBtn');
   btn.className='abar-btn'+(editMode?' on':'');
-  btn.textContent=editMode?'✓ Done':'✎ Edit';
+  btn.innerHTML=editMode?'<i data-lucide="check"></i> Done':'<i data-lucide="pencil"></i> Edit';
+  refreshIcons();
   renderAlbumTab();
 }
 
@@ -1208,12 +1353,13 @@ function renderCollPeopleFilter(){
   if (!root) return;
   const others=players.filter(p=>p.id!==me);
   if (!others.length){ root.innerHTML=''; return; }
-  let h=`<span class="lbl">👤 Others:</span>`;
+  let h=`<span class="lbl"><i data-lucide="user"></i> Others:</span>`;
   h+=`<button class="ppill${collOtherId===null?' on':''}" onclick="setCollOther(null)">None</button>`;
   for (const p of others){
-    h+=`<button class="ppill${collOtherId===p.id?' on':''}" onclick="setCollOther('${p.id}')">${p.emoji} ${escapeHtml(p.display_name)}</button>`;
+    h+=`<button class="ppill${collOtherId===p.id?' on':''}" onclick="setCollOther('${p.id}')">${avatarHtml(p,18)} ${escapeHtml(p.display_name)}</button>`;
   }
   root.innerHTML=h;
+  refreshIcons();
 }
 function setCollOther(id){ collOtherId=id; renderCollPeopleFilter(); renderAlbumTab(); }
 
@@ -1228,7 +1374,7 @@ function filterPills(containerId, selectedId, setter, others){
   let h=`<span class="lbl">With:</span>`;
   h+=`<button class="ppill${selectedId===null?' on':''}" onclick="${setter}(null)">Everyone</button>`;
   for (const p of others){
-    h+=`<button class="ppill${selectedId===p.id?' on':''}" onclick="${setter}('${p.id}')">${p.emoji} ${escapeHtml(p.display_name)}</button>`;
+    h+=`<button class="ppill${selectedId===p.id?' on':''}" onclick="${setter}('${p.id}')">${avatarHtml(p,18)} ${escapeHtml(p.display_name)}</button>`;
   }
   return h;
 }
@@ -1241,10 +1387,10 @@ function swapChip(s,dir){
   const img=s.img?`<img src="${s.img}" class="swapimg" loading="lazy" onload="this.classList.add('loaded')">`:'';
   return `<div class="swapchip" style="border-color:${col}66">
     ${img}
-    <div class="dir" style="color:${col}">${who}</div>
+    <div class="dir" style="color:${col}">${avatarHtml(s.other,16)} ${who}</div>
     <div class="sname">${nm}</div>
     <div class="sctry">${flagSpan(s.country,s.flag)} ${escapeHtml(s.country)} · ${s.id}</div>
-    <button class="vbtn" onclick="validateSwap('${s.id}','${s.other.id}')">✓ Traded</button>
+    <button class="vbtn" onclick="validateSwap('${s.id}','${s.other.id}')"><i data-lucide="check"></i> Traded</button>
   </div>`;
 }
 
@@ -1265,7 +1411,7 @@ function renderSwapPanel(){
       const n=Math.min(g,r);
       if(n>=2){
         ph+=`<div class="packcard">
-          <div class="pk-emoji">${o.emoji}</div>
+          <div class="pk-emoji">${avatarHtml(o,28)}</div>
           <div class="pk-body">
             <div class="pk-title">${n} × ${n} pack with ${escapeHtml(o.display_name)}</div>
             <div class="pk-sub">Give ${n} · Get ${n} — balanced trade</div>
@@ -1274,7 +1420,7 @@ function renderSwapPanel(){
         </div>`;
       }
     }
-    packsRoot.innerHTML=ph?`<div class="packs-head">📦 Suggested packs</div>${ph}`:'';
+    packsRoot.innerHTML=ph?`<div class="packs-head"><i data-lucide="package"></i> Suggested packs</div>${ph}`:'';
   }
 
   // ── GIVE panel ──
@@ -1292,6 +1438,7 @@ function renderSwapPanel(){
   document.getElementById('getGrid').innerHTML=gt.length
     ? gt.map(s=>swapChip(s,'get')).join('')
     : '<span style="color:var(--muted);font-size:12px">Nothing to get'+(getFilterId?' from this participant':'')+'.</span>';
+  refreshIcons();
 }
 
 // Validate a balanced pack: first n gives + first n gets with that person
@@ -1328,11 +1475,11 @@ function openNameEdit(id, btn){
   const panel = document.createElement('div');
   panel.className = 'name-edit-panel';
   panel.innerHTML = `
-    <div class="nep-hdr"><span>✎ ${escapeHtml(id)}</span><button onclick="this.closest('.name-edit-panel').remove()">✕</button></div>
+    <div class="nep-hdr"><span><i data-lucide="pencil"></i> ${escapeHtml(id)}</span><button onclick="this.closest('.name-edit-panel').remove()"><i data-lucide="x"></i></button></div>
     <input class="edit-first" placeholder="First name" value="${escapeHtml(s.first||'')}">
     <input class="edit-last" placeholder="LAST NAME" value="${escapeHtml(s.last||'')}">
     <div class="nep-btns">
-      <button onclick="saveNameEdit('${escapeHtml(id)}',this)">✓ Save</button>
+      <button onclick="saveNameEdit('${escapeHtml(id)}',this)"><i data-lucide="check"></i> Save</button>
       <button onclick="this.closest('.name-edit-panel').remove()">Cancel</button>
     </div>`;
   panel.addEventListener('click', e=>e.stopPropagation());
@@ -1345,6 +1492,7 @@ function openNameEdit(id, btn){
     panel.style.transform='translate(-50%,-50%)';
   }
   document.body.appendChild(panel);
+  refreshIcons();
   setTimeout(()=>panel.querySelector('.edit-last').focus(),50);
 }
 function cancelNameEdit(btn){ const f=btn.closest('.card-edit-form')||btn.closest('.name-edit-panel'); if(f)f.remove(); }
@@ -1370,8 +1518,8 @@ function otherChip(sid){
   const o=players.find(p=>p.id===collOtherId);
   if (!o) return '';
   const st=statusOf(o.id,sid);
-  const lbl=st==='double'?'×2':st==='have'?'✓':'—';
-  return `<div class="pother po-${st}" title="${escapeHtml(o.display_name)}">${o.emoji} ${lbl}</div>`;
+  const lbl=st==='double'?'×2':st==='have'?'<i data-lucide="check"></i>':'—';
+  return `<div class="pother po-${st}" title="${escapeHtml(o.display_name)}">${avatarHtml(o,16)} ${lbl}</div>`;
 }
 
 // WC 2026 Groups — derive sequential groups of 3 from COUNTRY_ORDER
@@ -1441,20 +1589,20 @@ function renderAlbumTab(slideDir){
         <div class="sfoot">
           <span class="pid">${s.id}</span>
           <span class="sname">${displayName}</span>
-          ${isDbl?'<span style="color:var(--c-blue);font-size:9px;font-weight:900">×2</span>':isHave?'<span style="color:var(--c-green);font-size:11px">✓</span>':''}
+          ${isDbl?'<span style="color:var(--c-blue);font-size:9px;font-weight:900">×2</span>':isHave?'<span style="color:var(--c-green);font-size:11px"><i data-lucide="check"></i></span>':''}
         </div>
         ${isDbl?'<div class="x2">×2</div>':''}
         ${otherChip(s.id)}
-        ${editMode?`<button class="premove" onclick="event.stopPropagation();hideSticker('${s.id}')">✕</button>`:''}
-        ${editMode?`<button class="pedit" onclick="event.stopPropagation();openNameEdit('${s.id}',this)">✎</button>`:''}
+        ${editMode?`<button class="premove" onclick="event.stopPropagation();hideSticker('${s.id}')"><i data-lucide="x"></i></button>`:''}
+        ${editMode?`<button class="pedit" onclick="event.stopPropagation();openNameEdit('${s.id}',this)"><i data-lucide="pencil"></i></button>`:''}
       </div>`;
     }
 
     // Fallback: no image
     if(isBadge) return `<div class="${cls}" data-sid="${s.id}" onclick="cycleStatus('${s.id}')">
-      <div class="shield">🛡️</div>
+      <div class="shield"><i data-lucide="shield"></i></div>
       <div class="pbody"><div style="font-size:10px;opacity:.6">${s.id}</div><div style="font-size:12px;font-weight:900">BADGE</div></div>
-      ${isDbl?'<div class="x2">×2</div>':isHave?'<div class="pcheck">✓</div>':''}
+      ${isDbl?'<div class="x2">×2</div>':isHave?'<div class="pcheck"><i data-lucide="check"></i></div>':''}
     </div>`;
     return `<div class="${cls}" data-sid="${s.id}" onclick="cycleStatus('${s.id}')">
       <div class="stripe"></div>
@@ -1466,10 +1614,10 @@ function renderAlbumTab(slideDir){
         </div>
       </div>
       <div class="pfoot"><span class="dot"></span>${escapeHtml(s.country)}</div>
-      ${isDbl?'<div class="x2">×2</div>':isHave?'<div class="pcheck">✓</div>':''}
+      ${isDbl?'<div class="x2">×2</div>':isHave?'<div class="pcheck"><i data-lucide="check"></i></div>':''}
       ${otherChip(s.id)}
-      ${editMode?`<button class="premove" onclick="event.stopPropagation();hideSticker('${s.id}')">✕</button>`:''}
-      ${editMode?`<button class="pedit" onclick="event.stopPropagation();openNameEdit('${s.id}',this)">✎</button>`:''}
+      ${editMode?`<button class="premove" onclick="event.stopPropagation();hideSticker('${s.id}')"><i data-lucide="x"></i></button>`:''}
+      ${editMode?`<button class="pedit" onclick="event.stopPropagation();openNameEdit('${s.id}',this)"><i data-lucide="pencil"></i></button>`:''}
     </div>`;
   }
 
@@ -1492,6 +1640,7 @@ function renderAlbumTab(slideDir){
   function applyContent(){
     grid.innerHTML=gridHtml;
     if(chips) chips.innerHTML=groupHtml;
+    refreshIcons();
   }
 
   if(slideDir){
@@ -1511,7 +1660,8 @@ function renderAlbumTab(slideDir){
   }
 
   const editBtn=document.getElementById('albumEditBtn');
-  if(editBtn){editBtn.className='abar-btn'+(editMode?' on':'');editBtn.textContent=editMode?'✓ Done':'✎ Edit';}
+  if(editBtn){editBtn.className='abar-btn'+(editMode?' on':'');editBtn.innerHTML=editMode?'<i data-lucide="check"></i> Done':'<i data-lucide="pencil"></i> Edit';}
+  refreshIcons();
 }
 
 // ── RENDER: stats tab ─────────────────────────────────────────────────
@@ -1660,15 +1810,15 @@ function renderStatsTab(){
     <div class="stats-panel">${ring}</div>
     <div class="chart-grid">
       <div class="chart-card">
-        <div class="chart-head"><span class="chart-title">📈 Collection growth</span><span class="chart-badge" style="color:var(--c-green)">+${weekHave} this week</span></div>
+        <div class="chart-head"><span class="chart-title"><i data-lucide="trending-up"></i> Collection growth</span><span class="chart-badge" style="color:var(--c-green)">+${weekHave} this week</span></div>
         ${svgArea(days,'var(--c-green)')}
       </div>
       <div class="chart-card">
-        <div class="chart-head"><span class="chart-title">⚡ Daily progress</span><span class="chart-badge" style="color:var(--c-green)">+${todayHave} today</span></div>
+        <div class="chart-head"><span class="chart-title"><i data-lucide="zap"></i> Daily progress</span><span class="chart-badge" style="color:var(--c-green)">+${todayHave} today</span></div>
         ${svgBars(days,'have','var(--c-green)')}
       </div>
       <div class="chart-card">
-        <div class="chart-head"><span class="chart-title">🔵 New doubles / day</span><span class="chart-badge" style="color:var(--c-blue)">+${todayDbl} today</span></div>
+        <div class="chart-head"><span class="chart-title"><i data-lucide="copy"></i> New doubles / day</span><span class="chart-badge" style="color:var(--c-blue)">+${todayDbl} today</span></div>
         ${svgBars(days,'double','var(--c-blue)')}
       </div>
     </div>
@@ -1678,6 +1828,7 @@ function renderStatsTab(){
       </h4>
       ${rowsH}
     </div>`;
+  refreshIcons();
 }
 
 // ── ADMIN MODE ────────────────────────────────────────────────────────
@@ -1685,6 +1836,7 @@ if (new URLSearchParams(location.search).get('admin')==='1'){
   document.body.innerHTML='<div style="padding:30px;max-width:600px;margin:0 auto;color:#f1f5f9;font-family:Arial"><h1 style="color:var(--gold);margin-bottom:14px">Admin · Panini WC2026</h1><p style="color:#94a3b8;font-size:13px;margin-bottom:20px">Rename players, reset data, view stats.</p><div id="adminContent">Loading…</div></div>';
   loadAdmin();
 } else {
+  refreshIcons();
   loadAll().then(()=>{ subscribeRealtime(); });
   setInterval(loadAll, 15000);
 }
@@ -1744,13 +1896,13 @@ let uploadMode=null, lastExtraction=null, overrideOldDoubles=[];
 
 function openUpload(mode){
   uploadMode=mode;
-  const titles={album:'📷 Scan album page',batch:'📥 Upload new batch','override-doubles':'🔄 Update my doubles'};
+  const titles={album:'<i data-lucide="camera"></i> Scan album page',batch:'<i data-lucide="images"></i> Upload new batch','override-doubles':'<i data-lucide="refresh-cw"></i> Update my doubles'};
   const descs={
     album:'Photo of an album page — detects which slots are filled or empty.',
     batch:'⭐ Pink star = newly acquired (missing → have) · No star = duplicate (double). Select one or more photos.',
     'override-doubles':'Select photos of ALL your current doubles. This will fully replace your doubles list.'
   };
-  document.getElementById('uploadTitle').textContent=titles[mode];
+  document.getElementById('uploadTitle').innerHTML=titles[mode];
   document.getElementById('uploadDesc').textContent=descs[mode];
   document.getElementById('detectedCountry').style.display='none';
   document.getElementById('uploadStatus').textContent='';
@@ -1761,6 +1913,7 @@ function openUpload(mode){
   document.getElementById('uploadFile').multiple=(mode!=='album');
   lastExtraction=null; overrideOldDoubles=[];
   document.getElementById('uploadModal').style.display='flex';
+  refreshIcons();
 }
 function closeUpload(){ document.getElementById('uploadModal').style.display='none'; }
 
