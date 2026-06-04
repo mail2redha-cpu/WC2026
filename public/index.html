@@ -358,12 +358,13 @@ body{
 .ring-line{font-size:12.5px;color:var(--muted);line-height:2;display:flex;align-items:center;gap:8px}
 .ring-line b{color:var(--txt)}
 .dotpill{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
-.chart-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px}
-@media(min-width:760px){.chart-grid{grid-template-columns:1fr 1fr}.chart-grid .chart-card:first-child{grid-column:1/-1}}
-.chart-card{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:20px;padding:14px 16px 8px}
-.chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.chart-title{font-size:13px;font-weight:900;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
-.chart-badge{font-size:12px;font-weight:900}
+.chart-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;align-items:stretch}
+.chart-card{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:18px;padding:12px 12px 6px;display:flex;flex-direction:column;min-width:0}
+.chart-card svg{flex:1}
+.chart-head{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.chart-title{font-size:11px;font-weight:900;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif;display:flex;align-items:center;gap:5px}
+.chart-badge{font-size:11px;font-weight:900}
+@media(max-width:520px){.chart-title{font-size:9.5px}.chart-badge{font-size:9.5px}}
 .stats-hero{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
 @media(min-width:480px){.stats-hero{grid-template-columns:repeat(4,1fr)}}
 .stat-card{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:20px;padding:18px;text-align:center}
@@ -1586,7 +1587,8 @@ function renderStatsTab(){
     if (m==='double') totalDbl++;
   }
   // Placed = stickers actually in the album = have only (doubles are spares, NOT counted in %)
-  const placed=totalHave;       // total entries that are 'have' (excludes 'double' spares)
+  // Owned = have + double (a double is still owned/placed). Only 'missing' counts against %.
+  const placed=totalHave+totalDbl;
   const totalAll=SEED.length;
   const pct=totalAll?Math.round(100*placed/totalAll):0;
   const swapCnt=swapsForMe().length;
@@ -1607,9 +1609,9 @@ function renderStatsTab(){
       else own++;
       if (m==='double') dbl++;
     }
-    const placedC=own-dbl;     // have only (doubles excluded from %)
-    const pctC=Math.round(100*placedC/CMAX);
-    countryStats.push({c, arr, own:placedC, dbl, miss, total:CMAX, pctC, flag:flagSpan(c,(arr[0]||{}).flag||'')});
+    const ownedC=own;          // own already = have+double (non-missing). 12/12 → 100%
+    const pctC=Math.round(100*ownedC/CMAX);
+    countryStats.push({c, arr, own:ownedC, dbl, miss, total:CMAX, pctC, flag:flagSpan(c,(arr[0]||{}).flag||'')});
   }
   if (statsSortMode==='missing') countryStats.sort((a,b)=>b.miss-a.miss || b.pctC-a.pctC);
   else countryStats.sort((a,b)=>b.pctC-a.pctC);
