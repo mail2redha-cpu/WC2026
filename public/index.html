@@ -117,7 +117,7 @@ body{
 .album-select{padding:6px 12px;background:rgba(20,8,30,.9);border:1px solid var(--glass-border);border-radius:999px;color:var(--txt);font-size:11px;cursor:pointer;max-width:150px}
 
 /* ── CLEAN COLLECTION GRID ── */
-.album-book{padding:12px 14px 90px;overflow:visible}
+.album-book{padding:4px 14px 90px;overflow:visible}
 /* Wrapper that fades/slides when navigating countries */
 .coll-grid-wrap{transition:opacity .25s ease,transform .25s ease;opacity:1;transform:translateX(0)}
 .coll-grid-wrap.slide-out-left{opacity:0;transform:translateX(-24px)}
@@ -165,8 +165,13 @@ body{
 }
 .mnav-ctry{font-size:1.15rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--txt);text-align:center;flex:1;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
 @media(max-width:640px){
-  .mobile-nav-strip{display:flex}
-  .album-book{padding-bottom:110px}
+  .mobile-nav-strip{display:flex;padding:10px 14px;bottom:64px;border-radius:0}
+  .mnav-btn{font-size:.95rem;padding:12px 22px;min-width:90px}
+  .mnav-ctry{font-size:.95rem}
+  /* Loading/action buttons pinned to very bottom, always visible */
+  .album-action-bar{position:fixed;bottom:0;left:0;right:0;z-index:52;margin:0;padding:10px 12px;gap:7px;background:rgba(13,0,21,.96);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:2px solid rgba(168,85,247,.3);flex-wrap:nowrap}
+  .abar-btn{min-width:0;padding:11px 6px;font-size:11px}
+  .album-book{padding-bottom:200px}
 }
 
 /* ── PANINI STICKER CARD ── */
@@ -254,8 +259,8 @@ body{
 
 /* ── TEAM VIGNETTE HEADER CARD ── */
 .country-vignette{
-  display:flex; align-items:center; gap:12px;
-  padding:16px 14px; margin:10px 12px; border-radius:18px;
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; margin:8px 12px 4px; border-radius:16px;
   color:#fff; position:relative; overflow:hidden;
   box-shadow: 0 8px 32px rgba(0,0,0,.4);
   transition: background 0.4s ease;
@@ -265,7 +270,7 @@ body{
   background:linear-gradient(135deg,rgba(255,255,255,.15) 0%,transparent 60%);
   pointer-events:none;
 }
-.vignette-flag{ font-size:3.5rem; line-height:1; flex-shrink:0; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
+.vignette-flag{ font-size:2.4rem; line-height:1; flex-shrink:0; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
 .vignette-body{ flex:1; display:flex; align-items:center; gap:12px; }
 .vignette-info{ flex:1; }
 .vignette-name{ font-size:1.4rem; font-weight:900; letter-spacing:.08em; text-shadow:0 2px 8px rgba(0,0,0,.4); font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif; text-transform:uppercase; }
@@ -366,7 +371,12 @@ body{
 .listtab-title{font-size:18px;font-weight:900;letter-spacing:.04em;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
 .listtab-count{font-size:13px;color:var(--muted);font-weight:700;margin-left:6px}
 .listtab-sub{font-size:12px;color:var(--muted);margin-top:3px}
-#doublesGrid,#missingGrid{padding:6px 14px 80px}
+.list-wrap{padding:4px 14px 80px}
+.list-section{margin-bottom:16px}
+.list-section-head{display:flex;align-items:center;gap:8px;padding:8px 4px;position:sticky;top:0;z-index:5}
+.list-section-head .fi{width:26px;height:18px;border-radius:3px}
+.list-section-head .ls-name{font-size:15px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.list-section-head .ls-count{font-size:12px;color:var(--muted);font-weight:700;background:rgba(255,255,255,.08);padding:2px 9px;border-radius:999px}
 .listtab-empty{text-align:center;color:var(--muted);font-size:14px;padding:40px 20px}
 .pcard .pctry{position:absolute;top:6px;left:6px;z-index:4;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:999px}
 .pcard .pctry .fi{width:18px;height:13px;border-radius:2px}
@@ -457,11 +467,10 @@ body{
       </div>
       <button class="vnav-btn" onclick="albumNav(1)">›</button>
     </div>
-    <div style="padding:0 14px 4px;display:flex;justify-content:flex-end">
+    <div style="padding:0 14px 2px;display:flex;justify-content:flex-end;align-items:center;gap:8px">
+      <div class="pfilter" id="collPeopleFilter" style="padding:0;flex:1"></div>
       <select class="album-select" id="albumCountrySelect" onchange="albumGoTo(this.value)"></select>
     </div>
-
-    <div class="pfilter" id="collPeopleFilter"></div>
 
     <div class="album-book" id="albumGrid">
       <div class="coll-grid-wrap" id="collGridWrap">
@@ -498,14 +507,14 @@ body{
   <!-- ── MY DOUBLES TAB ── -->
   <div class="tab-view mounted" id="tab-doubles">
     <div class="listtab-head"><h3 class="listtab-title" style="color:var(--c-blue)">🔵 My Doubles <span id="doublesCount" class="listtab-count"></span></h3><p class="listtab-sub">Stickers you have spare — available to swap.</p></div>
-    <div class="coll-grid" id="doublesGrid"></div>
+    <div class="list-wrap" id="doublesGrid"></div>
     <div id="doublesEmpty" class="listtab-empty" style="display:none">No doubles yet. Mark stickers as double in your Collection.</div>
   </div>
 
   <!-- ── MY MISSING TAB ── -->
   <div class="tab-view mounted" id="tab-missing">
     <div class="listtab-head"><h3 class="listtab-title" style="color:var(--c-red)">🔴 My Missing <span id="missingCount" class="listtab-count"></span></h3><p class="listtab-sub">Stickers you still need to complete your album.</p></div>
-    <div class="coll-grid" id="missingGrid"></div>
+    <div class="list-wrap" id="missingGrid"></div>
     <div id="missingEmpty" class="listtab-empty" style="display:none">🎉 Nothing missing — your album is complete!</div>
   </div>
 
@@ -894,7 +903,8 @@ function switchTab(tab){
 }
 
 // ── MY DOUBLES / MY MISSING tabs ──────────────────────────────────────
-// Read-only sticker card (cross-country) showing flag + photo + name
+// Read-only sticker card (cross-country). Clicking REMOVES it from the list
+// (doubles → mark have/spare resolved; missing → mark obtained). Always sets 'have'.
 function listCardHtml(s){
   const st=statusOf(me,s.id);
   const isHave=st==='have',isDbl=st==='double';
@@ -902,9 +912,7 @@ function listCardHtml(s){
   const displayName=s.first?`${escapeHtml(s.first)} ${escapeHtml(s.last)}`:escapeHtml(s.last);
   const cls='pcard status-'+st+(img?' has-img':'');
   if(img){
-    return `<div class="${cls}" data-sid="${s.id}" onclick="cycleStatus('${s.id}')">
-      <div class="stripe"></div>
-      <div class="pctry">${flagSpan(s.country,s.flag)}</div>
+    return `<div class="${cls}" data-sid="${s.id}" onclick="removeFromList('${s.id}')" title="Tap to remove from this list">
       <img class="simg" src="${img}" alt="${displayName}" loading="lazy" onload="this.classList.add('loaded')">
       <div class="sfoot">
         <span class="pid">${s.id}</span>
@@ -914,12 +922,19 @@ function listCardHtml(s){
       ${isDbl?'<div class="x2">×2</div>':''}
     </div>`;
   }
-  return `<div class="${cls}" data-sid="${s.id}" onclick="cycleStatus('${s.id}')">
+  return `<div class="${cls}" data-sid="${s.id}" onclick="removeFromList('${s.id}')" title="Tap to remove from this list">
     <div class="stripe"></div>
-    <div class="phead">${flagSpan(s.country,s.flag)}<span class="pid">${s.id}</span></div>
+    <div class="phead"><span class="pid">${s.id}</span></div>
     <div class="pbody"><div class="pcard-name"><span class="pcard-last">${escapeHtml(s.last)}</span></div></div>
-    <div class="pfoot"><span class="dot"></span>${escapeHtml(s.country)}</div>
   </div>`;
+}
+
+// Clicking a card in My Doubles / My Missing just clears it from that list (→ have)
+function removeFromList(stickerId){
+  setStatus(stickerId,'have');
+  // setStatus triggers realtime → render(); also refresh immediately
+  const status=currentTab==='doubles'?'double':'missing';
+  setTimeout(()=>renderListTab(status),50);
 }
 
 function renderListTab(status){
@@ -928,7 +943,7 @@ function renderListTab(status){
   const gridId=isDouble?'doublesGrid':'missingGrid';
   const emptyId=isDouble?'doublesEmpty':'missingEmpty';
   const countId=isDouble?'doublesCount':'missingCount';
-  // Filter SEED by my status, keep COUNTRY_ORDER then slot order
+  // Group by country (in COUNTRY_ORDER), slot order within
   const items=SEED.filter(s=>statusOf(me,s.id)===status);
   items.sort((a,b)=>{
     const ci=COUNTRY_ORDER.indexOf(a.country)-COUNTRY_ORDER.indexOf(b.country);
@@ -943,7 +958,24 @@ function renderListTab(status){
   if(cnt) cnt.textContent='('+items.length+')';
   if(items.length===0){ grid.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
-  grid.innerHTML=items.map(listCardHtml).join('');
+
+  // Build country sections
+  let html='';
+  let curCountry=null, open=false;
+  for(const s of items){
+    if(s.country!==curCountry){
+      if(open) html+='</div></div>';
+      curCountry=s.country;
+      const cArr=items.filter(x=>x.country===curCountry);
+      html+=`<div class="list-section">
+        <div class="list-section-head">${flagSpan(s.country,s.flag)}<span class="ls-name">${escapeHtml(s.country)}</span><span class="ls-count">${cArr.length}</span></div>
+        <div class="coll-grid">`;
+      open=true;
+    }
+    html+=listCardHtml(s);
+  }
+  if(open) html+='</div></div>';
+  grid.innerHTML=html;
 }
 
 // ── RENDER SPLASH ─────────────────────────────────────────────────────
