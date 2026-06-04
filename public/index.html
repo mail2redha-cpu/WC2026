@@ -338,6 +338,16 @@ body{
 .swapchip .sctry{font-size:11px;color:var(--muted);margin:4px 0 8px;display:flex;align-items:center;gap:6px}
 .swapchip .vbtn{width:100%;padding:7px 0;border-radius:999px;border:none;background:linear-gradient(135deg,var(--c-teal),var(--c-blue));color:#fff;font-size:11px;font-weight:900;letter-spacing:.04em;cursor:pointer;transition:transform .15s}
 .swapchip .vbtn:hover{transform:translateY(-2px)}
+.swapchip .swapimg{width:100%;aspect-ratio:2/3;object-fit:cover;object-position:top center;border-radius:10px;margin-bottom:7px;background:rgba(255,255,255,.06)}
+/* Pack suggestions */
+.packs-head{font-size:13px;font-weight:900;letter-spacing:.04em;color:var(--c-gold);margin:2px 2px 8px;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.packcard{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:10px;border-radius:18px;background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(249,115,22,.08));border:1px solid rgba(245,158,11,.35)}
+.pk-emoji{font-size:28px;flex-shrink:0}
+.pk-body{flex:1}
+.pk-title{font-size:15px;font-weight:900;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.pk-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.pk-btn{padding:10px 18px;border-radius:999px;border:none;background:linear-gradient(135deg,var(--c-gold),var(--c-orange));color:#1a0a00;font-size:13px;font-weight:900;cursor:pointer;white-space:nowrap;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif}
+.pk-btn:active{transform:scale(.96)}
 
 /* ── STATS TAB ── */
 .stats-inner{padding:14px}
@@ -512,10 +522,16 @@ body{
   <!-- ── SWAPS TAB ── -->
   <div class="tab-view mounted" id="tab-swaps">
     <div class="swaptab-inner">
-      <div class="pfilter" id="swapPeopleFilter"></div>
+      <div id="swapPacks"></div>
       <div class="swappanel">
-        <h3 id="swaptitle">↔ Swaps</h3>
-        <div class="swapgrid" id="swapgrid"></div>
+        <h3 style="color:#c084fc">⬆️ You give → others <span id="giveCount" class="listtab-count"></span></h3>
+        <div class="pfilter" id="giveFilter"></div>
+        <div class="swapgrid" id="giveGrid"></div>
+      </div>
+      <div class="swappanel">
+        <h3 style="color:var(--c-teal)">⬇️ Others give → you <span id="getCount" class="listtab-count"></span></h3>
+        <div class="pfilter" id="getFilter"></div>
+        <div class="swapgrid" id="getGrid"></div>
       </div>
     </div>
   </div>
@@ -753,7 +769,8 @@ let writing = 0;
 let currentTab = 'collection';
 let albumCountryIdx = 0;
 let collOtherId = null;   // selected participant to compare against in Collection
-let swapFilterId = null;  // selected participant to filter Swaps by
+let giveFilterId = null;  // filter for "you give" panel
+let getFilterId = null;   // filter for "others give you" panel
 let statsSortMode = 'missing';  // 'missing' | 'pct'
 function toggleStatsSort(){ statsSortMode = statsSortMode==='missing' ? 'pct' : 'missing'; renderStatsTab(); }
 
@@ -1126,7 +1143,7 @@ function renderSplash(){
 
 function pickMe(id){
   me=id;
-  collOtherId=null; swapFilterId=null;
+  collOtherId=null; giveFilterId=null; getFilterId=null;
   document.getElementById('splash').style.display='none';
   document.getElementById('app').style.display='flex';
   const p=players.find(x=>x.id===id);
@@ -1184,41 +1201,92 @@ function renderCollPeopleFilter(){
 function setCollOther(id){ collOtherId=id; renderCollPeopleFilter(); renderAlbumTab(); }
 
 // Participant filter row in Swaps
-function renderSwapPeopleFilter(){
-  const root=document.getElementById('swapPeopleFilter');
-  if (!root) return;
-  const others=players.filter(p=>p.id!==me);
-  if (!others.length){ root.innerHTML=''; return; }
-  let h=`<span class="lbl">Filter:</span>`;
-  h+=`<button class="ppill${swapFilterId===null?' on':''}" onclick="setSwapFilter(null)">Everyone</button>`;
-  for (const p of others){
-    h+=`<button class="ppill${swapFilterId===p.id?' on':''}" onclick="setSwapFilter('${p.id}')">${p.emoji} ${escapeHtml(p.display_name)}</button>`;
-  }
-  root.innerHTML=h;
-}
-function setSwapFilter(id){ swapFilterId=id; renderSwapPeopleFilter(); renderSwapPanel(); }
+// Compatibility: tab switch calls this — now a no-op (filters render inside panel)
+function renderSwapPeopleFilter(){}
 
-// ── RENDER: swap panel ────────────────────────────────────────────────
-function renderSwapPanel(){
-  let swaps=swapsForMe();
-  if (swapFilterId) swaps=swaps.filter(s=>s.other.id===swapFilterId);
-  document.getElementById('swaptitle').textContent='↔ Swaps ('+swaps.length+')';
-  let h='';
-  if (swaps.length===0) h='<span style="color:var(--muted);font-size:12px">No pending swaps'+(swapFilterId?' with this participant':'')+'</span>';
-  for (const s of swaps){
-    const get=s.dir==='get';
-    const col=get?'var(--c-teal)':'#c084fc';
-    const arrow=get?'⬇️':'⬆️';
-    const dirTxt=get?(escapeHtml(s.other.display_name)+' → you'):('You → '+escapeHtml(s.other.display_name));
-    h+=`<div class="swapchip" style="border-color:${col}66">
-      <div class="dir" style="color:${col}">${arrow} ${dirTxt}</div>
-      <div class="sname">${escapeHtml(s.last)}</div>
-      <div class="sid">${s.id}${s.first?' · '+escapeHtml(s.first):''}</div>
-      <div class="sctry">${flagSpan(s.country,s.flag)} ${escapeHtml(s.country)}</div>
-      <button class="vbtn" onclick="validateSwap('${s.id}','${s.other.id}')">✓ Traded</button>
-    </div>`;
+function setGiveFilter(id){ giveFilterId=id; renderSwapPanel(); }
+function setGetFilter(id){ getFilterId=id; renderSwapPanel(); }
+
+function filterPills(containerId, selectedId, setter, others){
+  let h=`<span class="lbl">With:</span>`;
+  h+=`<button class="ppill${selectedId===null?' on':''}" onclick="${setter}(null)">Everyone</button>`;
+  for (const p of others){
+    h+=`<button class="ppill${selectedId===p.id?' on':''}" onclick="${setter}('${p.id}')">${p.emoji} ${escapeHtml(p.display_name)}</button>`;
   }
-  document.getElementById('swapgrid').innerHTML=h;
+  return h;
+}
+
+function swapChip(s,dir){
+  const get=dir==='get';
+  const col=get?'var(--c-teal)':'#c084fc';
+  const who=get?(escapeHtml(s.other.display_name)+' → you'):('You → '+escapeHtml(s.other.display_name));
+  const nm=s.first?`${escapeHtml(s.first)} ${escapeHtml(s.last)}`:escapeHtml(s.last);
+  const img=s.img?`<img src="${s.img}" class="swapimg" loading="lazy" onload="this.classList.add('loaded')">`:'';
+  return `<div class="swapchip" style="border-color:${col}66">
+    ${img}
+    <div class="dir" style="color:${col}">${who}</div>
+    <div class="sname">${nm}</div>
+    <div class="sctry">${flagSpan(s.country,s.flag)} ${escapeHtml(s.country)} · ${s.id}</div>
+    <button class="vbtn" onclick="validateSwap('${s.id}','${s.other.id}')">✓ Traded</button>
+  </div>`;
+}
+
+// ── RENDER: swap panels (give / get) + packs ──────────────────────────
+function renderSwapPanel(){
+  const all=swapsForMe();
+  const others=players.filter(p=>p.id!==me);
+  const gives=all.filter(s=>s.dir==='give');
+  const gets=all.filter(s=>s.dir==='get');
+
+  // ── Pack suggestions: balanced N-for-N per participant ──
+  const packsRoot=document.getElementById('swapPacks');
+  if(packsRoot){
+    let ph='';
+    for(const o of others){
+      const g=gives.filter(s=>s.other.id===o.id).length;
+      const r=gets.filter(s=>s.other.id===o.id).length;
+      const n=Math.min(g,r);
+      if(n>=2){
+        ph+=`<div class="packcard">
+          <div class="pk-emoji">${o.emoji}</div>
+          <div class="pk-body">
+            <div class="pk-title">${n} × ${n} pack with ${escapeHtml(o.display_name)}</div>
+            <div class="pk-sub">Give ${n} · Get ${n} — balanced trade</div>
+          </div>
+          <button class="pk-btn" onclick="validatePack('${o.id}',${n})">Trade ${n}v${n}</button>
+        </div>`;
+      }
+    }
+    packsRoot.innerHTML=ph?`<div class="packs-head">📦 Suggested packs</div>${ph}`:'';
+  }
+
+  // ── GIVE panel ──
+  document.getElementById('giveFilter').innerHTML=filterPills('giveFilter',giveFilterId,'setGiveFilter',others);
+  let gv=giveFilterId?gives.filter(s=>s.other.id===giveFilterId):gives;
+  document.getElementById('giveCount').textContent='('+gv.length+')';
+  document.getElementById('giveGrid').innerHTML=gv.length
+    ? gv.map(s=>swapChip(s,'give')).join('')
+    : '<span style="color:var(--muted);font-size:12px">Nothing to give'+(giveFilterId?' to this participant':'')+'.</span>';
+
+  // ── GET panel ──
+  document.getElementById('getFilter').innerHTML=filterPills('getFilter',getFilterId,'setGetFilter',others);
+  let gt=getFilterId?gets.filter(s=>s.other.id===getFilterId):gets;
+  document.getElementById('getCount').textContent='('+gt.length+')';
+  document.getElementById('getGrid').innerHTML=gt.length
+    ? gt.map(s=>swapChip(s,'get')).join('')
+    : '<span style="color:var(--muted);font-size:12px">Nothing to get'+(getFilterId?' from this participant':'')+'.</span>';
+}
+
+// Validate a balanced pack: first n gives + first n gets with that person
+async function validatePack(otherId, n){
+  const all=swapsForMe();
+  const gives=all.filter(s=>s.dir==='give'&&s.other.id===otherId).slice(0,n);
+  const gets=all.filter(s=>s.dir==='get'&&s.other.id===otherId).slice(0,n);
+  const o=players.find(p=>p.id===otherId);
+  if(!confirm(`Confirm ${n}×${n} pack with ${o?o.display_name:''}?\nGive: ${gives.map(s=>s.last).join(', ')}\nGet: ${gets.map(s=>s.last).join(', ')}`)) return;
+  for(const s of [...gives,...gets]){
+    await validateSwap(s.id, otherId);
+  }
 }
 
 // ── RENDER: album tab ─────────────────────────────────────────────────
