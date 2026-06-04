@@ -844,6 +844,7 @@ const COUNTRY_ORDER = (() => {
 let players = [];
 let statusByPlayer = {};
 let rawStatusRows = [];
+let recentWrites = {};  // stickerId -> {status, ts} — protects optimistic writes from replica-lag reverts
 let doneSet = new Set();
 let me = null;
 let view='team', filter='all', query='', country='', editMode=false;
@@ -897,6 +898,17 @@ async function loadAll(){
       if (!statusByPlayer[row.player_id]) statusByPlayer[row.player_id] = {};
       statusByPlayer[row.player_id][row.sticker_id] = row.status;
     }
+    // Re-apply my optimistic writes from the last 12s (DB read replicas can lag)
+    const nowTs=Date.now();
+    if (me){
+      for (const sid in recentWrites){
+        const w=recentWrites[sid];
+        if (nowTs-w.ts < 12000){
+          if(!statusByPlayer[me]) statusByPlayer[me]={};
+          statusByPlayer[me][sid]=w.status;
+        } else { delete recentWrites[sid]; }
+      }
+    }
     doneSet = new Set(dn.data.map(r => r.pair_key+'|'+r.sticker_id));
     // Try loading custom sticker defs from Supabase
     try {
@@ -921,15 +933,40 @@ async function loadAll(){
 }
 
 // ── WRITE ─────────────────────────────────────────────────────────────
+// Update one card's visual state in place (no full-grid rebuild → no mis-taps)
+function refreshCardVisual(stickerId){
+  const st=statusOf(me,stickerId);
+  document.querySelectorAll(`.pcard[data-sid="${stickerId}"]`).forEach(el=>{
+    el.classList.remove('status-have','status-double','status-missing');
+    el.classList.add('status-'+st);
+    el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
+    // footer indicator (photo cards)
+    const foot=el.querySelector('.sfoot');
+    if(foot){
+      let ind=foot.querySelector('.st-ind');
+      if(!ind){ ind=document.createElement('span'); ind.className='st-ind'; foot.appendChild(ind); }
+      ind.innerHTML = st==='double'
+        ? '<span style="color:var(--c-blue);font-size:9px;font-weight:900">×2</span>'
+        : st==='have' ? '<span style="color:var(--c-green);font-size:11px"><i data-lucide="check"></i></span>' : '';
+    }
+    // ×2 corner overlay
+    let x2=el.querySelector('.x2');
+    if(st==='double' && !x2){ x2=document.createElement('div'); x2.className='x2'; x2.textContent='×2'; el.appendChild(x2); }
+    if(st!=='double' && x2) x2.remove();
+  });
+  refreshIcons();
+}
+
 async function setStatus(stickerId, newStatus){
   writing++;
   try {
     if (!statusByPlayer[me]) statusByPlayer[me]={};
     statusByPlayer[me][stickerId] = newStatus;
-    render();
-    // pulse the changed card
-    const card=document.querySelector(`.pcard[data-sid="${stickerId}"]`);
-    if (card){ card.classList.remove('pulse'); void card.offsetWidth; card.classList.add('pulse'); }
+    recentWrites[stickerId] = { status:newStatus, ts:Date.now() };
+    // In-place card update if visible, else full render
+    const visible=document.querySelector(`.pcard[data-sid="${stickerId}"]`);
+    if (visible && currentTab==='collection'){ refreshCardVisual(stickerId); }
+    else { render(); }
     const { error } = await sb.from('sticker_status')
       .upsert({ player_id:me, sticker_id:stickerId, status:newStatus, updated_at:new Date().toISOString() });
     if (error) throw error;
