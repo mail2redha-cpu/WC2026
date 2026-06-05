@@ -700,6 +700,16 @@ img.avatar.is-logo{object-fit:contain;background:#fff;padding:2px}
 // ── CONFIG ────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://bllhrtoctkzokzvbabme.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_QYb-zz1AKtbCjinAKUIUDA_ilCfw3cG';
+// Direct REST upsert — reliable across supabase-js key/version quirks.
+async function dbUpsertStatus(rows){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/sticker_status?on_conflict=player_id,sticker_id`, {
+    method:'POST',
+    headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY,
+      'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates' },
+    body: JSON.stringify(rows)
+  });
+  if(!res.ok){ const t=await res.text(); throw new Error('DB '+res.status+': '+t.slice(0,120)); }
+}
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── DATA (embedded) ───────────────────────────────────────────────────
@@ -985,9 +995,7 @@ async function setStatus(stickerId, newStatus){
     // pulse the changed card
     const card=document.querySelector(`.pcard[data-sid="${stickerId}"]`);
     if (card){ card.classList.remove('pulse'); void card.offsetWidth; card.classList.add('pulse'); }
-    const { error } = await sb.from('sticker_status')
-      .upsert({ player_id:me, sticker_id:stickerId, status:newStatus, updated_at:new Date().toISOString() });
-    if (error) throw error;
+    await dbUpsertStatus([{ player_id:me, sticker_id:stickerId, status:newStatus, updated_at:new Date().toISOString() }]);
     document.getElementById('sync').textContent = 'saved '+new Date().toLocaleTimeString();
   } catch(e){ showErr('Save failed: '+(e.message||e)); }
   finally { writing--; }
@@ -1136,15 +1144,14 @@ async function validateSwap(stickerId, otherPlayerId){
   writing++;
   try {
     const pk=pairKey(me,otherPlayerId);
-    const { error:e1 }=await sb.from('swaps_done').upsert({pair_key:pk,sticker_id:stickerId});
+    await fetch(`${SUPABASE_URL}/rest/v1/swaps_done?on_conflict=pair_key,sticker_id`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify({pair_key:pk,sticker_id:stickerId})});
     if (e1) throw e1;
     doneSet.add(pk+'|'+stickerId);
     const upserts=[
       {player_id:me,sticker_id:stickerId,status:'have',updated_at:new Date().toISOString()},
       {player_id:otherPlayerId,sticker_id:stickerId,status:'have',updated_at:new Date().toISOString()}
     ];
-    const { error:e2 }=await sb.from('sticker_status').upsert(upserts);
-    if (e2) throw e2;
+    await dbUpsertStatus(upserts);
     if (!statusByPlayer[me]) statusByPlayer[me]={};
     if (!statusByPlayer[otherPlayerId]) statusByPlayer[otherPlayerId]={};
     statusByPlayer[me][stickerId]='have';
@@ -2292,8 +2299,7 @@ async function applyExtraction(){
     } else {
       allRows=toApply.map(r=>({player_id:me,sticker_id:r.sid,status:r.status,updated_at:now}));
     }
-    const {error}=await sb.from('sticker_status').upsert(allRows);
-    if (error) throw error;
+    await dbUpsertStatus(allRows);
     if (!statusByPlayer[me]) statusByPlayer[me]={};
     for (const r of allRows) statusByPlayer[me][r.sticker_id]=r.status;
     render();
