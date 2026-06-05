@@ -490,7 +490,7 @@ img.avatar.is-logo{object-fit:contain;background:#fff;padding:2px}
   <div class="sp-sub">Who are you?</div>
   <div class="sp-cards" id="splashCards"><div class="spinner">Loading players…</div></div>
   <div class="sp-foot">
-    Updates are shared live with everyone. <a href="?admin=1">Admin</a> · <span style="opacity:.6">build v6</span>
+    Updates are shared live with everyone. <a href="?admin=1">Admin</a> · <span style="opacity:.6">build v7</span>
   </div>
 </div>
 
@@ -708,10 +708,15 @@ async function dbUpsertStatus(rows){
   const res = await fetch(`${SUPABASE_URL}/rest/v1/sticker_status?on_conflict=player_id,sticker_id`, {
     method:'POST',
     headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY,
-      'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates' },
+      'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify(rows)
   });
-  if(!res.ok){ const t=await res.text(); throw new Error('DB '+res.status+': '+t.slice(0,120)); }
+  const body = await res.text();
+  if(!res.ok){ throw new Error('DB '+res.status+': '+body.slice(0,140)); }
+  // Confirm at least one row came back (write actually applied)
+  try{ const arr=JSON.parse(body); if(!Array.isArray(arr)||arr.length===0) throw new Error('write returned no rows (RLS/insert blocked)'); }
+  catch(e){ if(e.message.includes('write returned')) throw e; }
+  return true;
 }
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -941,6 +946,10 @@ async function loadAll(){
       }
     }
     doneSet = new Set(dn.data.map(r => r.pair_key+'|'+r.sticker_id));
+    // Skip re-render (and the flashing) when nothing actually changed
+    const sig = JSON.stringify(statusByPlayer)+'|'+players.length+'|'+doneSet.size;
+    const changed = (sig !== window.__lastSig);
+    window.__lastSig = sig;
     // Try loading custom sticker defs from Supabase
     try {
       const { data: defs } = await sb.from('sticker_defs').select('*');
@@ -956,7 +965,7 @@ async function loadAll(){
       }
     } catch(_){}
     document.getElementById('sync').textContent = 'synced '+new Date().toLocaleTimeString();
-    if (me) render(); else renderSplash();
+    if (changed){ if (me) render(); else renderSplash(); }
   } catch(e){
     showErr('Sync error: '+(e.message||e));
     console.error(e);
@@ -1956,7 +1965,7 @@ if (new URLSearchParams(location.search).get('admin')==='1'){
   loadAll().then(()=>{ subscribeRealtime(); });
   setInterval(loadAll, 7000);   // faster cross-device sync (realtime may be unavailable)
   // Visible build stamp so we can confirm the loaded version
-  setTimeout(()=>{ const el=document.getElementById('sync'); if(el && !el.textContent) el.textContent='build v6'; },1200);
+  setTimeout(()=>{ const el=document.getElementById('sync'); if(el && !el.textContent) el.textContent='build v7'; },1200);
 }
 
 async function loadAdmin(){
