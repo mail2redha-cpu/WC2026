@@ -490,7 +490,7 @@ img.avatar.is-logo{object-fit:contain;background:#fff;padding:2px}
   <div class="sp-sub">Who are you?</div>
   <div class="sp-cards" id="splashCards"><div class="spinner">Loading players…</div></div>
   <div class="sp-foot">
-    Updates are shared live with everyone. <a href="?admin=1">Admin</a> · <span style="opacity:.6">build v7</span>
+    Updates are shared live with everyone. <a href="?admin=1">Admin</a> · <span style="opacity:.6">build v8</span>
   </div>
 </div>
 
@@ -912,17 +912,29 @@ function rebuildSEED(){
 }
 
 // ── DATA LOAD ─────────────────────────────────────────────────────────
+// Fetch ALL rows from a table, paginating past PostgREST's 1000-row page cap.
+async function fetchAllRows(table){
+  let all=[], from=0; const size=1000;
+  while(true){
+    const { data, error } = await sb.from(table).select('*').range(from, from+size-1);
+    if(error) throw error;
+    all = all.concat(data||[]);
+    if(!data || data.length<size) break;
+    from += size;
+  }
+  return all;
+}
+
 async function loadAll(){
   if (writing>0) return;
   try {
-    const [p, st, dn] = await Promise.all([
+    const [p, dn] = await Promise.all([
       sb.from('players').select('*').order('sort_order'),
-      sb.from('sticker_status').select('*'),
       sb.from('swaps_done').select('*')
     ]);
     if (p.error) throw p.error;
-    if (st.error) throw st.error;
     if (dn.error) throw dn.error;
+    const st = { data: await fetchAllRows('sticker_status') };  // all rows, not just first 1000
     players = p.data;
     // Merge any Supabase-stored avatars (column may not exist → ignored)
     let avatarsChanged=false;
@@ -1965,7 +1977,7 @@ if (new URLSearchParams(location.search).get('admin')==='1'){
   loadAll().then(()=>{ subscribeRealtime(); });
   setInterval(loadAll, 7000);   // faster cross-device sync (realtime may be unavailable)
   // Visible build stamp so we can confirm the loaded version
-  setTimeout(()=>{ const el=document.getElementById('sync'); if(el && !el.textContent) el.textContent='build v7'; },1200);
+  setTimeout(()=>{ const el=document.getElementById('sync'); if(el && !el.textContent) el.textContent='build v8'; },1200);
 }
 
 async function loadAdmin(){
