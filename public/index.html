@@ -981,10 +981,10 @@ async function setStatus(stickerId, newStatus){
     if (!statusByPlayer[me]) statusByPlayer[me]={};
     statusByPlayer[me][stickerId] = newStatus;
     recentWrites[stickerId] = { status:newStatus, ts:Date.now() };
-    // In-place card update if visible, else full render
-    const visible=document.querySelector(`.pcard[data-sid="${stickerId}"]`);
-    if (visible && currentTab==='collection'){ refreshCardVisual(stickerId); }
-    else { render(); }
+    render();
+    // pulse the changed card
+    const card=document.querySelector(`.pcard[data-sid="${stickerId}"]`);
+    if (card){ card.classList.remove('pulse'); void card.offsetWidth; card.classList.add('pulse'); }
     const { error } = await sb.from('sticker_status')
       .upsert({ player_id:me, sticker_id:stickerId, status:newStatus, updated_at:new Date().toISOString() });
     if (error) throw error;
