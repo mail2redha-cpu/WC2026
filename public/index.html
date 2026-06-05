@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>FIFA WC 2026 — Panini Swaps</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -487,7 +490,7 @@ img.avatar.is-logo{object-fit:contain;background:#fff;padding:2px}
   <div class="sp-sub">Who are you?</div>
   <div class="sp-cards" id="splashCards"><div class="spinner">Loading players…</div></div>
   <div class="sp-foot">
-    Updates are shared live with everyone. <a href="?admin=1">Admin</a>
+    Updates are shared live with everyone. <a href="?admin=1">Admin</a> · <span style="opacity:.6">build v6</span>
   </div>
 </div>
 
@@ -1951,7 +1954,9 @@ if (new URLSearchParams(location.search).get('admin')==='1'){
 } else {
   refreshIcons();
   loadAll().then(()=>{ subscribeRealtime(); });
-  setInterval(loadAll, 15000);
+  setInterval(loadAll, 7000);   // faster cross-device sync (realtime may be unavailable)
+  // Visible build stamp so we can confirm the loaded version
+  setTimeout(()=>{ const el=document.getElementById('sync'); if(el && !el.textContent) el.textContent='build v6'; },1200);
 }
 
 async function loadAdmin(){
