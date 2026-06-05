@@ -346,6 +346,10 @@ img.avatar.is-logo{object-fit:contain;background:#fff;padding:2px}
 
 /* ── SWAPS TAB ── */
 .swaptab-inner{padding:12px 14px}
+.swapdir-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.swapdir-tabs{display:flex;gap:6px;background:rgba(255,255,255,.05);padding:4px;border-radius:999px;flex-wrap:wrap}
+.swapdir-btn{display:flex;align-items:center;gap:5px;padding:9px 14px;border-radius:999px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:900;cursor:pointer;font-family:'Century Gothic',CenturyGothic,AppleGothic,'Trebuchet MS',sans-serif;letter-spacing:.03em;transition:all .2s}
+.swapdir-btn.on{background:linear-gradient(135deg,var(--c-teal),var(--c-blue));color:#fff;box-shadow:0 6px 16px rgba(20,184,166,.35)}
 .swappanel{border-radius:20px;padding:14px;margin-bottom:12px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-border)}
 .swappanel h3{font-weight:900;font-size:13px;letter-spacing:.04em;color:var(--c-teal);margin-bottom:12px}
 .swapgrid{display:flex;flex-wrap:wrap;gap:10px}
@@ -555,13 +559,21 @@ img.avatar.is-logo{object-fit:contain;background:#fff;padding:2px}
   <!-- ── SWAPS TAB ── -->
   <div class="tab-view mounted" id="tab-swaps">
     <div class="swaptab-inner">
+      <div class="swapdir-bar">
+        <div class="swapdir-tabs">
+          <button class="swapdir-btn on" id="sd-both" onclick="setSwapDir('both')">Both ways</button>
+          <button class="swapdir-btn" id="sd-give" onclick="setSwapDir('give')"><i data-lucide="arrow-up"></i> You give</button>
+          <button class="swapdir-btn" id="sd-get" onclick="setSwapDir('get')"><i data-lucide="arrow-down"></i> You get</button>
+        </div>
+        <button class="pdf-btn" onclick="exportSwapsPdf()"><i data-lucide="file-text"></i> Export PDF</button>
+      </div>
       <div id="swapPacks"></div>
-      <div class="swappanel">
+      <div class="swappanel" id="givePanel">
         <h3 style="color:#c084fc"><i data-lucide="arrow-up"></i> You give → others <span id="giveCount" class="listtab-count"></span></h3>
         <div class="pfilter" id="giveFilter"></div>
         <div class="swapgrid" id="giveGrid"></div>
       </div>
-      <div class="swappanel">
+      <div class="swappanel" id="getPanel">
         <h3 style="color:var(--c-teal)"><i data-lucide="arrow-down"></i> Others give → you <span id="getCount" class="listtab-count"></span></h3>
         <div class="pfilter" id="getFilter"></div>
         <div class="swapgrid" id="getGrid"></div>
@@ -854,6 +866,12 @@ let albumCountryIdx = 0;
 let collOtherId = null;   // selected participant to compare against in Collection
 let giveFilterId = null;  // filter for "you give" panel
 let getFilterId = null;   // filter for "others give you" panel
+let swapDir = 'both';     // 'both' | 'give' | 'get'
+function setSwapDir(d){
+  swapDir=d;
+  ['both','give','get'].forEach(k=>{const b=document.getElementById('sd-'+k); if(b) b.className='swapdir-btn'+(k===d?' on':'');});
+  renderSwapPanel();
+}
 let statsSortMode = 'missing';  // 'missing' | 'pct'
 function toggleStatsSort(){ statsSortMode = statsSortMode==='missing' ? 'pct' : 'missing'; renderStatsTab(); }
 
@@ -1475,7 +1493,58 @@ function renderSwapPanel(){
   document.getElementById('getGrid').innerHTML=gt.length
     ? gt.map(s=>swapChip(s,'get')).join('')
     : '<span style="color:var(--muted);font-size:12px">Nothing to get'+(getFilterId?' from this participant':'')+'.</span>';
+
+  // Direction filter: show only the chosen way
+  const gp=document.getElementById('givePanel'), rp=document.getElementById('getPanel');
+  if(gp) gp.style.display=(swapDir==='get')?'none':'';
+  if(rp) rp.style.display=(swapDir==='give')?'none':'';
+  // Packs only make sense when viewing both directions
+  if(packsRoot && swapDir!=='both') packsRoot.innerHTML='';
   refreshIcons();
+}
+
+// Returns the currently-filtered swaps respecting direction + participant filters
+function filteredSwaps(){
+  const all=swapsForMe();
+  let out=[];
+  if(swapDir!=='get') out=out.concat(all.filter(s=>s.dir==='give' && (!giveFilterId||s.other.id===giveFilterId)));
+  if(swapDir!=='give') out=out.concat(all.filter(s=>s.dir==='get' && (!getFilterId||s.other.id===getFilterId)));
+  return out;
+}
+
+// Export the currently-filtered swaps to PDF (sticker photos, large)
+async function exportSwapsPdf(){
+  if(!me) return;
+  if(!window.jspdf||!window.jspdf.jsPDF){ alert('PDF library still loading — try again in a second.'); return; }
+  const items=filteredSwaps().filter(s=>s.img);
+  if(items.length===0){ alert('No swaps match the current filters.'); return; }
+  const meName=(players.find(p=>p.id===me)||{}).display_name||'';
+  const dirLabel=swapDir==='give'?'You give':swapDir==='get'?'You get':'All swaps';
+  const title=`${dirLabel} — ${meName}`;
+  const { jsPDF }=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const PW=210,PH=297,MX=10,MTOP=22,MBOT=10;
+  function loadImg(src){return new Promise(r=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>r(im);im.onerror=()=>r(null);im.src=src;});}
+  const COLS=5, gap=4;
+  const cellW=(PW-2*MX-(COLS-1)*gap)/COLS, cellH=cellW*1.5, labelH=8;
+  let x=MX,y=MTOP,col=0;
+  doc.setFontSize(15); doc.setTextColor(20,20,40); doc.text(title,MX,12);
+  doc.setFontSize(9); doc.setTextColor(120,120,140); doc.text(`${items.length} stickers`,PW-MX,12,{align:'right'});
+  for(const s of items){
+    const dirTag=s.dir==='give'?'GIVE':'GET';
+    const who=s.other?(' '+(s.other.display_name||'')):'';
+    const im=await loadImg(s.img);
+    if(im){ try{ doc.addImage(im,'JPEG',x,y,cellW,cellH,undefined,'SLOW'); }catch(e){} }
+    else { doc.setDrawColor(200); doc.rect(x,y,cellW,cellH); }
+    doc.setFontSize(6); doc.setTextColor(s.dir==='give'?170:20, s.dir==='give'?60:120, s.dir==='give'?200:80);
+    doc.text(`${dirTag}${who}`.slice(0,22), x+cellW/2, y+cellH+3, {align:'center',maxWidth:cellW});
+    doc.setTextColor(60,60,80);
+    doc.text(`${s.id} ${(s.last||'').slice(0,14)}`, x+cellW/2, y+cellH+6, {align:'center',maxWidth:cellW});
+    col++;
+    if(col>=COLS){ col=0; x=MX; y+=cellH+labelH; if(y+cellH>PH-MBOT){ doc.addPage(); y=MTOP; } }
+    else x+=cellW+gap;
+  }
+  doc.save(`panini-swaps-${swapDir}-${meName.replace(/\s+/g,'_')||'list'}.pdf`);
 }
 
 // Validate a balanced pack: first n gives + first n gets with that person
